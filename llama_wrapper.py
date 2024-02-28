@@ -52,6 +52,8 @@ class BlockOutputWrapper(t.nn.Module):
         self.add_activations = None
         self.after_position = None
 
+        self.eraser = None
+
         self.save_internal_decodings = False
 
         self.calc_dot_product_with = None
@@ -75,6 +77,7 @@ class BlockOutputWrapper(t.nn.Module):
                 vector=self.add_activations,
                 position_ids=kwargs["position_ids"],
                 after=self.after_position,
+                eraser=self.eraser,
             )
             output = (augmented_output,) + output[1:]
 
@@ -101,8 +104,12 @@ class BlockOutputWrapper(t.nn.Module):
     def add(self, activations):
         self.add_activations = activations
 
+    def erase(self, eraser):
+        self.eraser = eraser
+
     def reset(self):
         self.add_activations = None
+        self.eraser = None
         self.activations = None
         self.block.self_attn.activations = None
         self.after_position = None
@@ -194,6 +201,9 @@ class LlamaWrapper:
 
     def set_add_activations(self, layer, activations):
         self.model.model.layers[layer].add(activations)
+
+    def set_erase(self, layer, eraser):
+        self.model.model.layers[layer].erase(eraser)
 
     def set_calc_dot_product_with(self, layer, vector):
         self.model.model.layers[layer].calc_dot_product_with = vector

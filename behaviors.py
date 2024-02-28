@@ -35,6 +35,7 @@ ALL_BEHAVIORS = [
 ]
 
 VECTORS_PATH = os.path.join(BASE_DIR, "vectors")
+ERASERS_PATH = os.path.join(BASE_DIR, "erasers")
 NORMALIZED_VECTORS_PATH = os.path.join(BASE_DIR, "normalized_vectors")
 ANALYSIS_PATH = os.path.join(BASE_DIR, "analysis")
 RESULTS_PATH = os.path.join(BASE_DIR, "results")
@@ -49,10 +50,21 @@ def get_vector_dir(behavior: str, normalized=False) -> str:
     return os.path.join(NORMALIZED_VECTORS_PATH if normalized else VECTORS_PATH, behavior)
 
 
+def get_eraser_dir(behavior: str) -> str:
+    return os.path.join(ERASERS_PATH, behavior)
+
+
 def get_vector_path(behavior: str, layer, model_name_path: str, normalized=False) -> str:
     return os.path.join(
         get_vector_dir(behavior, normalized=normalized),
         f"vec_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
+    )
+
+
+def get_eraser_path(behavior: str, layer, model_name_path: str) -> str:
+    return os.path.join(
+        get_eraser_dir(behavior),
+        f"eras_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
     )
 
 
@@ -165,8 +177,18 @@ def get_mmlu_data():
     return data
 
 
-def get_steering_vector(behavior, layer, model_name_path, normalized=False):
-    return t.load(get_vector_path(behavior, layer, model_name_path, normalized=normalized))
+def get_steering_vector(behavior, layer, model_name_path, normalized=False, device=None):
+    return t.load(
+        get_vector_path(behavior, layer, model_name_path, normalized=normalized),
+        map_location=device,
+    )
+
+
+def get_steering_eraser(behavior, layer, model_name_path, device=None):
+    return t.load(
+        get_eraser_path(behavior, layer, model_name_path),
+        map_location=device,
+    )
 
 
 def get_finetuned_model_path(

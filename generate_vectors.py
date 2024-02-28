@@ -6,6 +6,7 @@ python generate_vectors.py --layers $(seq 0 31) --save_activations --use_base_mo
 """
 
 import json
+from concept_erasure import LeaceFitter
 import torch as t
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
@@ -21,6 +22,7 @@ from behaviors import (
     get_activations_dir,
     get_ab_data_path,
     get_vector_path,
+    get_eraser_path,
     get_activations_path,
     ALL_BEHAVIORS
 )
@@ -92,9 +94,19 @@ def generate_save_vectors_for_behavior(
         model.use_chat,
     )
 
+    fitters : dict[int, LeaceFitter] = {l: None for l in layers}
+
+    for layer in layers:
+        act_dim = model.model.model.layers[layer].block.hidden_size
+        fitters[layer] = LeaceFitter(
+            act_dim, 2,
+            device=model.device,
+        )
+
     for p_tokens, n_tokens in tqdm(dataset, desc="Processing prompts"):
         p_tokens = p_tokens.to(model.device)
         n_tokens = n_tokens.to(model.device)
+        assert p_tokens.shape[0] == n_tokens.shape[0] == 1, f"data too long: {p_tokens.shape} {n_tokens.shape}"
         model.reset_all()
         model.get_logits(p_tokens)
         for layer in layers:
@@ -108,13 +120,23 @@ def generate_save_vectors_for_behavior(
             n_activations = n_activations[0, -2, :].detach().cpu()
             neg_activations[layer].append(n_activations)
 
+            fitter = fitters[layer]
+            x = t.stack((n_activations, p_activations)).to(model.device)
+            z = t.eye(2, device=model.device)
+            fitter.update(x, z)
+
     for layer in layers:
         all_pos_layer = t.stack(pos_activations[layer])
         all_neg_layer = t.stack(neg_activations[layer])
         vec = (all_pos_layer - all_neg_layer).mean(dim=0)
+        eraser = fitters[layer].eraser
         t.save(
             vec,
             get_vector_path(behavior, layer, model.model_name_path),
+        )
+        t.save(
+            eraser,
+            get_eraser_path(behavior, layer, model.model_name_path),
         )
         if save_activations:
             t.save(

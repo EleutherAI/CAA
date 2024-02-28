@@ -17,6 +17,7 @@ from utils.tokenize import E_INST
 from steering_settings import SteeringSettings
 from behaviors import (
     get_open_ended_test_data,
+    get_steering_eraser,
     get_steering_vector,
     get_system_prompt,
     get_truthful_qa_data,
@@ -132,13 +133,14 @@ def test_steering(
         name_path = model.model_name_path
         if settings.override_vector_model is not None:
             name_path = settings.override_vector_model
+        layer_to_get = layer
         if settings.override_vector is not None:
-            vector = get_steering_vector(settings.behavior, settings.override_vector, name_path, normalized=True)
-        else:
-            vector = get_steering_vector(settings.behavior, layer, name_path, normalized=True)
+            layer_to_get = settings.override_vector
+        vector = get_steering_vector(settings.behavior, layer_to_get, name_path, normalized=True, device=model.device)
+        if settings.leace:
+            eraser = get_steering_eraser(settings.behavior, layer_to_get, name_path, device=model.device)
         if settings.model_size != "7b":
             vector = vector.half()
-        vector = vector.to(model.device)
         for multiplier in multipliers:
             result_save_suffix = settings.make_result_save_suffix(
                 layer=layer, multiplier=multiplier
@@ -156,6 +158,10 @@ def test_steering(
                 model.set_add_activations(
                     layer, multiplier * vector
                 )
+                if settings.leace:
+                    model.set_erase(
+                        layer, eraser
+                    )
                 result = process_methods[settings.type](
                     item=item,
                     model=model,
@@ -194,6 +200,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_size", type=str, choices=["7b", "13b"], default="7b")
     parser.add_argument("--override_model_weights_path", type=str, default=None)
     parser.add_argument("--overwrite", action="store_true", default=False)
+    parser.add_argument("--leace", action="store_true", default=False)
     
     args = parser.parse_args()
 
@@ -205,6 +212,7 @@ if __name__ == "__main__":
     steering_settings.use_base_model = args.use_base_model
     steering_settings.model_size = args.model_size
     steering_settings.override_model_weights_path = args.override_model_weights_path
+    steering_settings.leace = args.leace
 
     for behavior in args.behaviors:
         steering_settings.behavior = behavior

@@ -13,6 +13,7 @@ class SteeringSettings:
     use_base_model: bool = False
     model_size: str = "7b"
     override_model_weights_path: Optional[str] = None
+    leace: bool = False
 
     def __post_init__(self):
         assert self.behavior in ALL_BEHAVIORS, f"Invalid behavior {self.behavior}"
@@ -33,8 +34,9 @@ class SteeringSettings:
             "use_base_model": self.use_base_model,
             "model_size": self.model_size,
             "override_model_weights_path": self.override_model_weights_path,
+            "leace": self.leace,
         }
-        return "_".join([f"{k}={str(v).replace('/', '-')}" for k, v in elements.items() if v is not None])
+        return "__".join([f"{k}={str(v).replace('/', '-')}" for k, v in elements.items() if v is not None])
 
     def filter_result_files_by_suffix(
         self,
@@ -53,6 +55,7 @@ class SteeringSettings:
             "use_base_model": self.use_base_model,
             "model_size": self.model_size,
             "override_model_weights_path": self.override_model_weights_path,
+            "leace": self.leace,
         }
 
         filtered_elements = {k: v for k, v in elements.items() if v is not None}
