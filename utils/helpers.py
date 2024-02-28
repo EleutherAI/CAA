@@ -22,13 +22,15 @@ def set_plotting_settings():
 
 
 
-def add_vector_after_position(matrix, vector, position_ids, after=None):
+def add_vector_after_position(matrix, vector, position_ids, after=None, eraser=None):
     after_id = after
     if after_id is None:
         after_id = position_ids.min().item() - 1
 
     mask = position_ids >= after_id
     
+    if eraser is not None:
+        matrix[mask] = eraser(matrix[mask])
     matrix[mask] += vector
     return matrix
 
