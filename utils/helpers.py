@@ -28,9 +28,8 @@ def add_vector_after_position(matrix, vector, position_ids, after=None):
         after_id = position_ids.min().item() - 1
 
     mask = position_ids >= after_id
-    mask = mask.unsqueeze(-1)
-
-    matrix += mask.float() * vector
+    
+    matrix[mask] += vector
     return matrix
 
 
