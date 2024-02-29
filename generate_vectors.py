@@ -112,20 +112,21 @@ def generate_save_vectors_for_behavior(
         model.reset_all()
         model.get_logits(p_tokens)
         for layer in layers:
-            p_activations = model.get_last_activations(layer)
-            p_activations = p_activations[0, -2, :].detach().cpu()
-            pos_activations[layer].append(p_activations)
+            p_activations = model.get_last_activations(layer)[0, -2, :].detach()
+            pos_activations[layer].append(p_activations.cpu())
+
+            x = p_activations[None]
+            z = t.tensor([[0, 1]], device=x.device)
+            fitters[layer].update(x, z)
         model.reset_all()
         model.get_logits(n_tokens)
         for layer in layers:
-            n_activations = model.get_last_activations(layer)
-            n_activations = n_activations[0, -2, :].detach().cpu()
-            neg_activations[layer].append(n_activations)
-
-            fitter = fitters[layer]
-            x = t.stack((n_activations, p_activations)).to(model.device)
-            z = t.eye(2, device=model.device)
-            fitter.update(x, z)
+            n_activations = model.get_last_activations(layer)[0, -2, :].detach()
+            neg_activations[layer].append(n_activations.cpu())
+        
+            x = n_activations[None]
+            z = t.tensor([[1, 0]], device=x.device)
+            fitters[layer].update(x, z)
 
     for layer in layers:
         all_pos_layer = t.stack(pos_activations[layer])
