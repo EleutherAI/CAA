@@ -2,6 +2,7 @@ from behaviors import ALL_BEHAVIORS, get_vector_path
 from utils.helpers import get_model_path
 import torch as t
 import os
+import argparse
 
 def normalize_vectors(model_size: str, is_base: bool, n_layers: int):
     # make normalized_vectors directory
@@ -34,6 +35,14 @@ def normalize_vectors(model_size: str, is_base: bool, n_layers: int):
     
     
 if __name__ == "__main__":
-    normalize_vectors("7b", True, 32)
-    normalize_vectors("7b", False, 32)
-    normalize_vectors("13b", False, 36)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", type=str, choices=["7chat", "13chat", "7base", "all"], default="all")
+
+    args = parser.parse_args()
+
+    if args.mode in ["7chat", "all"]:
+            normalize_vectors("7b", False, 32)
+    if args.mode in ["13chat", "all"]:
+            normalize_vectors("13b", False, 36)
+    if args.mode in ["7base", "all"]:
+            normalize_vectors("7b", True, 32)

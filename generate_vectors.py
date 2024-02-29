@@ -74,6 +74,7 @@ def generate_save_vectors_for_behavior(
     save_activations: bool,
     behavior: List[str],
     model: LlamaWrapper,
+    leace_method: str,
 ):
     data_path = get_ab_data_path(behavior)
     if not os.path.exists(get_vector_dir(behavior)):
@@ -101,6 +102,7 @@ def generate_save_vectors_for_behavior(
         fitters[layer] = LeaceFitter(
             act_dim, 2,
             device=model.device,
+            method=leace_method,
         )
 
     for p_tokens, n_tokens in tqdm(dataset, desc="Processing prompts"):
@@ -154,6 +156,7 @@ def generate_save_vectors(
     use_base_model: bool,
     model_size: str,
     behaviors: List[str],
+    leace_method: str,
 ):
     """
     layers: list of layers to generate vectors for
@@ -167,7 +170,7 @@ def generate_save_vectors(
     )
     for behavior in behaviors:
         generate_save_vectors_for_behavior(
-            layers, save_activations, behavior, model
+            layers, save_activations, behavior, model, leace_method
         )
 
 
@@ -178,6 +181,7 @@ if __name__ == "__main__":
     parser.add_argument("--use_base_model", action="store_true", default=False)
     parser.add_argument("--model_size", type=str, choices=["7b", "13b"], default="7b")
     parser.add_argument("--behaviors", nargs="+", type=str, default=ALL_BEHAVIORS)
+    parser.add_argument("--method", type=str, choices=["leace", "orth"], default="leace")
 
     args = parser.parse_args()
     generate_save_vectors(
@@ -185,5 +189,6 @@ if __name__ == "__main__":
         args.save_activations,
         args.use_base_model,
         args.model_size,
-        args.behaviors
+        args.behaviors,
+        args.method,
     )
