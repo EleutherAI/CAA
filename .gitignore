@@ -12,3 +12,8 @@ logs
 .DS_Store
 .hypothesis
 */.DS_Store
+vectors/*/*.pt
+erasers/*/*.pt
+normalized_vectors/*/*.pt
+results/**/*.json
+analysis/**/*.*
