@@ -37,21 +37,21 @@ python prompting_with_steering.py $@ --layers 14 --multipliers -2 -1 0 1 2 --typ
 python prompting_with_steering.py $@ --layers 13 --multipliers -2 -1 0 1 2 --type truthful_qa --behaviors sycophancy
 python prompting_with_steering.py $@ --layers 14 --multipliers -2 -1 0 1 2 --type truthful_qa --behaviors sycophancy --model_size "13b"
 
-python plot_results.py $@ --layers $(seq 0 31) --multipliers -1 1 --type ab 
-python plot_results.py $@ --layers $(seq 0 35) --multipliers -1 1 --type ab --model_size "13b"
-python plot_results.py $@ --layers $(seq 0 31) --multipliers -1 1 --type ab --override_vector_model Llama-2-7b-hf --title "CAA transfer from base to chat model"
-python plot_results.py $@ --layers $(seq 0 31) --multipliers -1 1 --type ab --override_vector 13 --title "CAA transfer from layer 13 vector to other layers"
+python plot_results.py $1 --layers $(seq 0 31) --multipliers -1 1 --type ab 
+python plot_results.py $1 --layers $(seq 0 35) --multipliers -1 1 --type ab --model_size "13b"
+python plot_results.py $1 --layers $(seq 0 31) --multipliers -1 1 --type ab --override_vector_model Llama-2-7b-hf --title "CAA transfer from base to chat model"
+python plot_results.py $1 --layers $(seq 0 31) --multipliers -1 1 --type ab --override_vector 13 --title "CAA transfer from layer 13 vector to other layers"
 
-python plot_results.py $@ --layers 13 --multipliers -1 -0.5 0 0.5 1 --type ab --title "Layer 13 - Llama 2 7B Chat"
-python plot_results.py $@ --layers 14 --multipliers -1 -0.5 0 0.5 1 --type ab --model_size "13b" --title "Layer 14 - Llama 2 13B Chat"
+python plot_results.py $1 --layers 13 --multipliers -1 -0.5 0 0.5 1 --type ab --title "Layer 13 - Llama 2 7B Chat"
+python plot_results.py $1 --layers 14 --multipliers -1 -0.5 0 0.5 1 --type ab --model_size "13b" --title "Layer 14 - Llama 2 13B Chat"
 
-python plot_results.py $@ --layers 13 --multipliers -2 -1 0 1 2 --type mmlu
-python plot_results.py $@ --layers 14 --multipliers -2 -1 0 1 2 --type mmlu --model_size "13b"
+python plot_results.py $1 --layers 13 --multipliers -2 -1 0 1 2 --type mmlu
+python plot_results.py $1 --layers 14 --multipliers -2 -1 0 1 2 --type mmlu --model_size "13b"
 
-python plot_results.py $@ --layers 13 --multipliers -2 -1 0 1 2 --type truthful_qa --behaviors sycophancy
-python plot_results.py $@ --layers 14 --multipliers -2 -1 0 1 2 --type truthful_qa --behaviors sycophancy --model_size "13b"
+python plot_results.py $1 --layers 13 --multipliers -2 -1 0 1 2 --type truthful_qa --behaviors sycophancy
+python plot_results.py $1 --layers 14 --multipliers -2 -1 0 1 2 --type truthful_qa --behaviors sycophancy --model_size "13b"
 
-python scoring.py
+# python scoring.py
 
-python plot_results.py $@ --layers 13 --multipliers -1.5 -1 0 1 1.5 --type open_ended  --title "Layer 13 - Llama 2 7B Chat"
-python plot_results.py $@ --layers 14 --multipliers -1.5 -1 0 1 1.5 --type open_ended --model_size "13b" --title "Layer 14 - Llama 2 13B Chat"
+# python plot_results.py $1 --layers 13 --multipliers -1.5 -1 0 1 1.5 --type open_ended  --title "Layer 13 - Llama 2 7B Chat"
+# python plot_results.py $1 --layers 14 --multipliers -1.5 -1 0 1 1.5 --type open_ended --model_size "13b" --title "Layer 14 - Llama 2 13B Chat"
