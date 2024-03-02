@@ -103,6 +103,7 @@ def generate_save_vectors_for_behavior(
             act_dim, 2,
             device=model.device,
             method=leace_method,
+            dtype=t.float64,
         )
 
     for p_tokens, n_tokens in tqdm(dataset, desc="Processing prompts"):

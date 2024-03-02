@@ -3,6 +3,7 @@ from typing import Literal, Optional
 from utils.helpers import make_tensor_save_suffix
 import json
 import torch as t
+from concept_erasure import LeaceEraser
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -61,7 +62,7 @@ def get_vector_path(behavior: str, layer, model_name_path: str, normalized=False
     )
 
 
-def get_eraser_path(behavior: str, layer, model_name_path: str, prefix: str = "eras") -> str:
+def get_eraser_path(behavior: str, layer, model_name_path: str, prefix: str) -> str:
     return os.path.join(
         get_eraser_dir(behavior),
         f"{prefix}_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
@@ -184,9 +185,16 @@ def get_steering_vector(behavior, layer, model_name_path, normalized=False, devi
     )
 
 
-def get_steering_eraser(behavior, layer, model_name_path, device=None):
+def change_eraser_dtype(eraser : LeaceEraser, dtype):
+    proj_left = eraser.proj_left.to(dtype)
+    proj_right = eraser.proj_right.to(dtype)
+    bias = eraser.bias.to(dtype)
+    return LeaceEraser(proj_left, proj_right, bias)
+
+
+def get_steering_eraser(behavior, layer, model_name_path, device=None, prefix:str="eras"):
     return t.load(
-        get_eraser_path(behavior, layer, model_name_path),
+        get_eraser_path(behavior, layer, model_name_path, prefix),
         map_location=device,
     )
 
