@@ -61,10 +61,10 @@ def get_vector_path(behavior: str, layer, model_name_path: str, normalized=False
     )
 
 
-def get_eraser_path(behavior: str, layer, model_name_path: str) -> str:
+def get_eraser_path(behavior: str, layer, model_name_path: str, prefix: str = "eras") -> str:
     return os.path.join(
         get_eraser_dir(behavior),
-        f"eras_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
+        f"{prefix}_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
     )
 
 

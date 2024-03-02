@@ -139,7 +139,7 @@ def generate_save_vectors_for_behavior(
         )
         t.save(
             eraser,
-            get_eraser_path(behavior, layer, model.model_name_path),
+            get_eraser_path(behavior, layer, model.model_name_path, leace_method),
         )
         if save_activations:
             t.save(
