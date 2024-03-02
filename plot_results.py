@@ -21,7 +21,7 @@ set_plotting_settings()
 
 def get_data(
     layer: int,
-    multiplier: int,
+    multiplier: float,
     settings: SteeringSettings,
 ) -> Dict[str, Any]:
     directory = get_results_dir(settings.behavior)

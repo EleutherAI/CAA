@@ -14,6 +14,7 @@ class SteeringSettings:
     model_size: str = "7b"
     override_model_weights_path: Optional[str] = None
     leace: bool = False
+    leace_method: str = "leace"
 
     def __post_init__(self):
         assert self.behavior in ALL_BEHAVIORS, f"Invalid behavior {self.behavior}"
@@ -36,13 +37,16 @@ class SteeringSettings:
             "override_model_weights_path": self.override_model_weights_path,
             "leace": self.leace,
         }
+        if self.leace_method != "leace":
+            elements["method"] = self.leace_method
+        
         return "__".join([f"{k}={str(v).replace('/', '-')}" for k, v in elements.items() if v is not None])
 
     def filter_result_files_by_suffix(
         self,
         directory: str,
         layer: Optional[int] = None,
-        multiplier: Optional[int] = None,
+        multiplier: Optional[float] = None,
     ):
         elements = {
             "layer": str(layer)+"_",
@@ -57,6 +61,8 @@ class SteeringSettings:
             "override_model_weights_path": self.override_model_weights_path,
             "leace": self.leace,
         }
+        if self.leace_method != "leace":
+            elements["method"] = self.leace_method
 
         filtered_elements = {k: v for k, v in elements.items() if v is not None}
         remove_elements = {k for k, v in elements.items() if v is None}
