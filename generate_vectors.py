@@ -75,6 +75,7 @@ def generate_save_vectors_for_behavior(
     behavior: List[str],
     model: LlamaWrapper,
     leace_method: str,
+    logit: bool,
 ):
     data_path = get_ab_data_path(behavior)
     if not os.path.exists(get_vector_dir(behavior)):
@@ -85,8 +86,11 @@ def generate_save_vectors_for_behavior(
     model.set_save_internal_decodings(False)
     model.reset_all()
 
-    pos_activations = dict([(layer, []) for layer in layers])
-    neg_activations = dict([(layer, []) for layer in layers])
+    pos_activations = {layer: [] for layer in layers}
+    if logit:
+        AB_logits = {layer: [] for layer in layers}
+    else:
+        neg_activations = {layer: [] for layer in layers}
 
     dataset = ComparisonDataset(
         data_path,
@@ -100,7 +104,7 @@ def generate_save_vectors_for_behavior(
     for layer in layers:
         act_dim = model.model.model.layers[layer].block.hidden_size
         fitters[layer] = LeaceFitter(
-            act_dim, 2,
+            act_dim, (1 if logit else 2),
             device=model.device,
             method=leace_method,
             dtype=t.float64,
@@ -111,36 +115,58 @@ def generate_save_vectors_for_behavior(
         n_tokens = n_tokens.to(model.device)
         assert p_tokens.shape[0] == n_tokens.shape[0] == 1, f"data too long: {p_tokens.shape} {n_tokens.shape}"
         model.reset_all()
-        model.get_logits(p_tokens)
+        p_tok = p_tokens[0, -2]
+        n_tok = n_tokens[0, -2]
+        logits = model.get_logits(p_tokens)[0, -2, (n_tok, p_tok)].detach()
         for layer in layers:
-            p_activations = model.get_last_activations(layer)[0, -2, :].detach()
+            # read *output* position [A/B] for logit mode
+            # *input* position for non-logit mode
+            position = -3 if logit else -2
+
+            p_activations = model.get_last_activations(layer)[0, position, :].detach()
             pos_activations[layer].append(p_activations.cpu())
 
-            x = p_activations[None]
-            z = t.tensor([[0, 1]], device=x.device)
-            fitters[layer].update(x, z)
-        model.reset_all()
-        model.get_logits(n_tokens)
-        for layer in layers:
-            n_activations = model.get_last_activations(layer)[0, -2, :].detach()
-            neg_activations[layer].append(n_activations.cpu())
-        
-            x = n_activations[None]
-            z = t.tensor([[1, 0]], device=x.device)
-            fitters[layer].update(x, z)
+            if logit:
+                AB_logit = (logits[1] - logits[0])
+                AB_logits[layer].append(AB_logit.cpu())
+
+                x = p_activations[None]
+                z = AB_logit[None][None]
+                fitters[layer].update(x, z)
+            else:
+                x = p_activations[None]
+                z = t.tensor([[0, 1]], device=x.device)
+                fitters[layer].update(x, z)
+        if not logit:
+            model.reset_all()
+            model.get_logits(n_tokens)
+            for layer in layers:
+                n_activations = model.get_last_activations(layer)[0, -2, :].detach()
+                neg_activations[layer].append(n_activations.cpu())
+            
+                x = n_activations[None]
+                z = t.tensor([[1, 0]], device=x.device)
+                fitters[layer].update(x, z)
 
     for layer in layers:
         all_pos_layer = t.stack(pos_activations[layer])
-        all_neg_layer = t.stack(neg_activations[layer])
-        vec = (all_pos_layer - all_neg_layer).mean(dim=0)
+        if logit:
+            all_AB_logits = t.stack(AB_logits[layer])
+            Exz = t.einsum("i,ik->ik", all_AB_logits, all_pos_layer).mean(dim=0)
+            ExEz = all_AB_logits.mean() * all_pos_layer.mean(dim=0)
+            vec = Exz - ExEz
+        else:
+            all_neg_layer = t.stack(neg_activations[layer])
+            vec = (all_pos_layer - all_neg_layer).mean(dim=0)
         eraser = fitters[layer].eraser
+
         t.save(
             vec,
-            get_vector_path(behavior, layer, model.model_name_path),
+            get_vector_path(behavior, layer, model.model_name_path, logit),
         )
         t.save(
             eraser,
-            get_eraser_path(behavior, layer, model.model_name_path, leace_method),
+            get_eraser_path(behavior, layer, model.model_name_path, logit, leace_method),
         )
         if save_activations:
             t.save(
@@ -159,6 +185,7 @@ def generate_save_vectors(
     model_size: str,
     behaviors: List[str],
     leace_method: str,
+    logit: bool,
 ):
     """
     layers: list of layers to generate vectors for
@@ -166,13 +193,15 @@ def generate_save_vectors(
     use_base_model: Whether to use the base model instead of the chat model
     model_size: size of the model to use, either "7b" or "13b"
     behaviors: behaviors to generate vectors for
+    leace_method: method to use for LEACE, either "leace" or "orth"
+    logit: if True, weight by pos/neg logit instead of subtracting means
     """
     model = LlamaWrapper(
         HUGGINGFACE_TOKEN, size=model_size, use_chat=not use_base_model
     )
     for behavior in behaviors:
         generate_save_vectors_for_behavior(
-            layers, save_activations, behavior, model, leace_method
+            layers, save_activations, behavior, model, leace_method, logit
         )
 
 
@@ -184,6 +213,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_size", type=str, choices=["7b", "13b"], default="7b")
     parser.add_argument("--behaviors", nargs="+", type=str, default=ALL_BEHAVIORS)
     parser.add_argument("--method", type=str, choices=["leace", "orth"], default="leace")
+    parser.add_argument("--logit", action="store_true", default=False)
 
     args = parser.parse_args()
     generate_save_vectors(
@@ -193,4 +223,5 @@ if __name__ == "__main__":
         args.model_size,
         args.behaviors,
         args.method,
+        args.logit,
     )

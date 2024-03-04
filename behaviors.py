@@ -55,16 +55,18 @@ def get_eraser_dir(behavior: str) -> str:
     return os.path.join(ERASERS_PATH, behavior)
 
 
-def get_vector_path(behavior: str, layer, model_name_path: str, normalized=False) -> str:
+def get_vector_path(behavior: str, layer, model_name_path: str, logit: bool, normalized=False) -> str:
     return os.path.join(
         get_vector_dir(behavior, normalized=normalized),
+        "logit" if logit else "",
         f"vec_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
     )
 
 
-def get_eraser_path(behavior: str, layer, model_name_path: str, prefix: str) -> str:
+def get_eraser_path(behavior: str, layer, model_name_path: str, logit: bool, prefix: str) -> str:
     return os.path.join(
         get_eraser_dir(behavior),
+        "logit" if logit else "",
         f"{prefix}_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
     )
 
@@ -178,9 +180,9 @@ def get_mmlu_data():
     return data
 
 
-def get_steering_vector(behavior, layer, model_name_path, normalized=False, device=None):
+def get_steering_vector(behavior, layer, model_name_path, normalized=False, logit=False, device=None):
     return t.load(
-        get_vector_path(behavior, layer, model_name_path, normalized=normalized),
+        get_vector_path(behavior, layer, model_name_path, logit, normalized=normalized),
         map_location=device,
     )
 
@@ -192,9 +194,9 @@ def change_eraser_dtype(eraser : LeaceEraser, dtype):
     return LeaceEraser(proj_left, proj_right, bias)
 
 
-def get_steering_eraser(behavior, layer, model_name_path, device=None, prefix:str="eras"):
+def get_steering_eraser(behavior, layer, model_name_path, logit=False, device=None, prefix:str="eras"):
     return t.load(
-        get_eraser_path(behavior, layer, model_name_path, prefix),
+        get_eraser_path(behavior, layer, model_name_path, logit, prefix),
         map_location=device,
     )
 
