@@ -3,7 +3,7 @@
 task=$1
 shift
 
-if [ "$task" = "0" ]; then
+if [[ "$task" == *"0"* ]]; then
 
     python prompting_with_steering.py $@ --layers $(seq 0 31) --multipliers -1 0 1 --type ab 
     python plot_results.py $@ --layers $(seq 0 31) --multipliers -1 1 --type ab 
@@ -17,7 +17,7 @@ if [ "$task" = "0" ]; then
     python prompting_with_steering.py $@ --layers $(seq 0 31) --multipliers -1 0 1 --type ab --override_vector 13
     python plot_results.py $@ --layers $(seq 0 31) --multipliers -1 1 --type ab --override_vector 13 --title "CAA transfer from layer 13 vector to other layers"
 
-elif [ "$task" = "1" ]; then
+elif [[ "$task" == *"1"* ]]; then
 
     python prompting_with_steering.py $@ --layers 13 --multipliers -1 -0.5 0 0.5 1 --type ab
     python prompting_with_steering.py $@ --layers 13 --multipliers -1 -0.5 0 0.5 1 --type ab --system_prompt pos
@@ -29,7 +29,7 @@ elif [ "$task" = "1" ]; then
     python prompting_with_steering.py $@ --layers 14 --multipliers -1 -0.5 0 0.5 1 --type ab --model_size "13b" --system_prompt neg
     python plot_results.py $@ --layers 14 --multipliers -1 -0.5 0 0.5 1 --type ab --model_size "13b" --title "Layer 14 - Llama 2 13B Chat"
 
-elif [ "$task" = "2" ]; then
+elif [[ "$task" == *"2"* ]]; then
 
     python prompting_with_steering.py $@ --layers 13 --multipliers -2 -1 0 1 2 --type mmlu
     python plot_results.py $@ --layers 13 --multipliers -2 -1 0 1 2 --type mmlu
@@ -43,7 +43,7 @@ elif [ "$task" = "2" ]; then
     python prompting_with_steering.py $@ --layers 14 --multipliers -2 -1 0 1 2 --type truthful_qa --behaviors sycophancy --model_size "13b"
     python plot_results.py $@ --layers 14 --multipliers -2 -1 0 1 2 --type truthful_qa --behaviors sycophancy --model_size "13b"
 
-elif [ "$task" = "3" ]; then
+elif [[ "$task" == *"3"* ]]; then
 
     python prompting_with_steering.py $@ --layers 13 --multipliers -2.0 -1.5 -1 0 1 1.5 2.0 --type open_ended
     python prompting_with_steering.py $@ --layers 14 --multipliers -2.0 -1.5 -1 0 1 1.5 2.0 --type open_ended --model_size "13b"
