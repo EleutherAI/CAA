@@ -1,4 +1,4 @@
-activations*
+activations/**
 venv
 __pycache__
 .pytest_cache
@@ -12,8 +12,11 @@ logs
 .DS_Store
 .hypothesis
 */.DS_Store
-vectors*/*/*.pt
-erasers*/*/*.pt
-normalized_vectors*/*/*.pt
-results*/**/*.json
-analysis*/**/*.*
+vectors/*/*.pt
+vectors/*/logit/*.pt
+erasers/*/*.pt
+erasers/*/logit/*.pt
+normalized_vectors/*/*.pt
+results/**/*.json
+analysis/**/*.*
+output/**
