@@ -137,12 +137,12 @@ def test_steering(
         layer_to_get = layer
         if settings.override_vector is not None:
             layer_to_get = settings.override_vector
-        vector = get_steering_vector(settings.behavior, layer_to_get, name_path, normalized=True, device=model.device)
+        vector = get_steering_vector(settings.behavior, layer_to_get, name_path, normalized=True, logit=settings.logit, device=model.device)
         if settings.model_size != "7b":
             vector = vector.half()
         if settings.leace:
             eraser = get_steering_eraser(settings.behavior, layer_to_get, name_path, 
-                device=model.device, prefix=settings.leace_method)
+                logit=settings.logit, device=model.device, prefix=settings.leace_method)
             eraser = change_eraser_dtype(eraser, vector.dtype)
         for multiplier in multipliers:
             result_save_suffix = settings.make_result_save_suffix(
@@ -205,7 +205,8 @@ if __name__ == "__main__":
     parser.add_argument("--overwrite", action="store_true", default=False)
     parser.add_argument("--leace", action="store_true", default=False)
     parser.add_argument("--method", type=str, choices=["leace", "orth"], default="leace")
-    
+    parser.add_argument("--logit", action="store_true", default=False)
+
     args = parser.parse_args()
 
     steering_settings = SteeringSettings()
@@ -218,6 +219,7 @@ if __name__ == "__main__":
     steering_settings.override_model_weights_path = args.override_model_weights_path
     steering_settings.leace = args.leace
     steering_settings.leace_method = args.method
+    steering_settings.logit = args.logit
 
     for behavior in args.behaviors:
         steering_settings.behavior = behavior

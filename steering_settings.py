@@ -15,6 +15,7 @@ class SteeringSettings:
     override_model_weights_path: Optional[str] = None
     leace: bool = False
     leace_method: str = "leace"
+    logit: bool = False
 
     def __post_init__(self):
         assert self.behavior in ALL_BEHAVIORS, f"Invalid behavior {self.behavior}"
@@ -39,6 +40,8 @@ class SteeringSettings:
         }
         if self.leace_method != "leace":
             elements["method"] = self.leace_method
+        if self.logit:
+            elements["logit"] = True
         
         return "__".join([f"{k}={str(v).replace('/', '-')}" for k, v in elements.items() if v is not None])
 
@@ -60,9 +63,9 @@ class SteeringSettings:
             "model_size": self.model_size,
             "override_model_weights_path": self.override_model_weights_path,
             "leace": self.leace,
+            "method": self.leace_method if self.leace_method != "leace" else None,
+            "logit": True if self.logit else None,
         }
-        if self.leace_method != "leace":
-            elements["method"] = self.leace_method
 
         filtered_elements = {k: v for k, v in elements.items() if v is not None}
         remove_elements = {k for k, v in elements.items() if v is None}

@@ -486,6 +486,8 @@ def steering_settings_from_args(args, behavior: str) -> SteeringSettings:
     steering_settings.use_base_model = args.use_base_model
     steering_settings.model_size = args.model_size
     steering_settings.leace = args.leace
+    steering_settings.leace_method = args.method
+    steering_settings.logit = args.logit
     if len(args.override_weights) > 0:
         steering_settings.override_model_weights_path = args.override_weights[0]
     return steering_settings
@@ -513,6 +515,8 @@ if __name__ == "__main__":
     parser.add_argument("--model_size", type=str, choices=["7b", "13b"], default="7b")
     parser.add_argument("--override_weights", type=str, nargs="+", default=[])
     parser.add_argument("--leace", action="store_true", default=False)
+    parser.add_argument("--method", type=str, choices=["leace", "orth"], default="leace")
+    parser.add_argument("--logit", action="store_true", default=False)
     
     args = parser.parse_args()
 
