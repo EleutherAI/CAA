@@ -4,7 +4,7 @@ import torch as t
 import os
 import argparse
 
-def normalize_vectors(model_size: str, is_base: bool, n_layers: int):
+def normalize_vectors(model_size: str, is_base: bool, n_layers: int, logit: bool):
     # make normalized_vectors directory
     normalized_vectors_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "normalized_vectors")
     if not os.path.exists(normalized_vectors_dir):
@@ -15,7 +15,10 @@ def normalize_vectors(model_size: str, is_base: bool, n_layers: int):
         vecs = {}
         new_paths = {}
         for behavior in ALL_BEHAVIORS:
-            vec_path = get_vector_path(behavior, layer, get_model_path(model_size, is_base=is_base))
+            vec_path = get_vector_path(
+                behavior, layer, get_model_path(model_size, is_base=is_base),
+                logit=logit,
+                )
             vec = t.load(vec_path)
             norm = vec.norm().item()
             vecs[behavior] = vec
@@ -37,12 +40,13 @@ def normalize_vectors(model_size: str, is_base: bool, n_layers: int):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", type=str, choices=["7chat", "13chat", "7base", "all"], default="all")
+    parser.add_argument("--logit", action="store_true", default=False)
 
     args = parser.parse_args()
 
     if args.mode in ["7chat", "all"]:
-            normalize_vectors("7b", False, 32)
+            normalize_vectors("7b", False, 32, args.logit)
     if args.mode in ["13chat", "all"]:
-            normalize_vectors("13b", False, 36)
+            normalize_vectors("13b", False, 36, args.logit)
     if args.mode in ["7base", "all"]:
-            normalize_vectors("7b", True, 32)
+            normalize_vectors("7b", True, 32, args.logit)
