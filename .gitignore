@@ -17,6 +17,7 @@ vectors/*/logit/*.pt
 erasers/*/*.pt
 erasers/*/logit/*.pt
 normalized_vectors/*/*.pt
+normalized_vectors/*/logit/*.pt
 results/**/*.json
 analysis/**/*.*
 output/**
