@@ -12,8 +12,7 @@ logs
 .DS_Store
 .hypothesis
 */.DS_Store
-vectors/*/*.pt
-vectors/*/logit/*.pt
+vectors/**/*.pt
 erasers/*/*.pt
 erasers/*/logit/*.pt
 normalized_vectors/*/*.pt
