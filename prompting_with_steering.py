@@ -138,7 +138,7 @@ def test_steering(
         if settings.override_vector is not None:
             layer_to_get = settings.override_vector
         vector = get_steering_vector(settings.behavior, layer_to_get, name_path, 
-            normalized=True, logit=settings.logit, stdev=settings.stdev, device=model.device)
+            normalized=settings.normalized, logit=settings.logit, stdev=settings.stdev, device=model.device)
         if settings.model_size != "7b":
             vector = vector.half()
         if settings.leace:
@@ -208,6 +208,7 @@ if __name__ == "__main__":
     parser.add_argument("--method", type=str, choices=["leace", "orth"], default="leace")
     parser.add_argument("--logit", action="store_true", default=False)
     parser.add_argument("--stdev", action="store_true", default=False)
+    parser.add_argument("--unnormalized", action="store_false", dest="normalized")
 
     args = parser.parse_args()
 
@@ -223,6 +224,7 @@ if __name__ == "__main__":
     steering_settings.leace_method = args.method
     steering_settings.logit = args.logit
     steering_settings.stdev = args.stdev
+    steering_settings.normalized = args.normalized and not args.stdev
 
     for behavior in args.behaviors:
         steering_settings.behavior = behavior
