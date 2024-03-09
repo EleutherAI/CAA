@@ -55,10 +55,14 @@ def get_eraser_dir(behavior: str) -> str:
     return os.path.join(ERASERS_PATH, behavior)
 
 
-def get_vector_path(behavior: str, layer, model_name_path: str, logit: bool, normalized=False) -> str:
+def get_vector_path(
+        behavior: str, layer, model_name_path: str, 
+        logit: bool, stdev: bool, normalized=False
+    ) -> str:
     return os.path.join(
         get_vector_dir(behavior, normalized=normalized),
         "logit" if logit else "",
+        "stdev" if stdev else "",
         f"vec_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
     )
 
@@ -180,9 +184,10 @@ def get_mmlu_data():
     return data
 
 
-def get_steering_vector(behavior, layer, model_name_path, normalized=False, logit=False, device=None):
+def get_steering_vector(behavior, layer, model_name_path, normalized=False, 
+        logit=False, stdev=False, device=None):
     return t.load(
-        get_vector_path(behavior, layer, model_name_path, logit, normalized=normalized),
+        get_vector_path(behavior, layer, model_name_path, logit, stdev, normalized=normalized),
         map_location=device,
     )
 

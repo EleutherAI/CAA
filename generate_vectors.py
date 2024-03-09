@@ -76,6 +76,7 @@ def generate_save_vectors_for_behavior(
     model: LlamaWrapper,
     leace_method: str,
     logit: bool,
+    stdev: bool,
 ):
     data_path = get_ab_data_path(behavior)
     if not os.path.exists(get_vector_dir(behavior)):
@@ -160,9 +161,15 @@ def generate_save_vectors_for_behavior(
             vec = (all_pos_layer - all_neg_layer).mean(dim=0)
         eraser = fitters[layer].eraser
 
+        if stdev:
+            sigma = fitters[layer].sigma_xx
+            L = t.linalg.cholesky(sigma + 1e-6 * t.eye(sigma.shape[0], device=sigma.device))
+            precision = t.cholesky_inverse(L)
+            vec = vec / (vec @ precision @ vec).sqrt()
+
         t.save(
             vec,
-            get_vector_path(behavior, layer, model.model_name_path, logit),
+            get_vector_path(behavior, layer, model.model_name_path, logit, stdev),
         )
         t.save(
             eraser,
@@ -184,8 +191,7 @@ def generate_save_vectors(
     use_base_model: bool,
     model_size: str,
     behaviors: List[str],
-    leace_method: str,
-    logit: bool,
+    **kwargs
 ):
     """
     layers: list of layers to generate vectors for
@@ -201,7 +207,7 @@ def generate_save_vectors(
     )
     for behavior in behaviors:
         generate_save_vectors_for_behavior(
-            layers, save_activations, behavior, model, leace_method, logit
+            layers, save_activations, behavior, model, **kwargs
         )
 
 
@@ -214,6 +220,7 @@ if __name__ == "__main__":
     parser.add_argument("--behaviors", nargs="+", type=str, default=ALL_BEHAVIORS)
     parser.add_argument("--method", type=str, choices=["leace", "orth"], default="leace")
     parser.add_argument("--logit", action="store_true", default=False)
+    parser.add_argument("--stdev", action="store_true", default=False)
 
     args = parser.parse_args()
     generate_save_vectors(
@@ -224,4 +231,5 @@ if __name__ == "__main__":
         args.behaviors,
         args.method,
         args.logit,
+        args.stdev,
     )

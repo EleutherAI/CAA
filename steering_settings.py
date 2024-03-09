@@ -16,6 +16,7 @@ class SteeringSettings:
     leace: bool = False
     leace_method: str = "leace"
     logit: bool = False
+    stdev: bool = False
 
     def __post_init__(self):
         assert self.behavior in ALL_BEHAVIORS, f"Invalid behavior {self.behavior}"
@@ -42,6 +43,8 @@ class SteeringSettings:
             elements["method"] = self.leace_method
         if self.logit:
             elements["logit"] = True
+        if self.stdev:
+            elements["stdev"] = True
         
         return "__".join([f"{k}={str(v).replace('/', '-')}" for k, v in elements.items() if v is not None])
 
@@ -65,6 +68,7 @@ class SteeringSettings:
             "leace": self.leace,
             "method": self.leace_method if self.leace_method != "leace" else None,
             "logit": True if self.logit else None,
+            "stdev": True if self.stdev else None,
         }
 
         filtered_elements = {k: v for k, v in elements.items() if v is not None}
