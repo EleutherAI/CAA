@@ -162,10 +162,12 @@ def generate_save_vectors_for_behavior(
         eraser = fitters[layer].eraser
 
         if stdev:
-            sigma = fitters[layer].sigma_xx
+            sigma = fitters[layer].sigma_xx.to(vec.device)
             L = t.linalg.cholesky(sigma + 1e-6 * t.eye(sigma.shape[0], device=sigma.device))
             precision = t.cholesky_inverse(L)
-            vec = vec / (vec @ precision @ vec).sqrt()
+            
+            vec64 = vec.to(precision.dtype)
+            vec /= (vec64 @ precision @ vec64).sqrt().to(vec.dtype)
 
         t.save(
             vec,
@@ -229,7 +231,7 @@ if __name__ == "__main__":
         args.use_base_model,
         args.model_size,
         args.behaviors,
-        args.method,
-        args.logit,
-        args.stdev,
+        leace_method=args.method,
+        logit=args.logit,
+        stdev=args.stdev,
     )
