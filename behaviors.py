@@ -3,7 +3,7 @@ from typing import Literal, Optional
 from utils.helpers import make_tensor_save_suffix
 import json
 import torch as t
-from concept_erasure import LeaceEraser
+from concept_erasure import LeaceEraser, QuadraticEditor
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -57,13 +57,13 @@ def get_eraser_dir(behavior: str) -> str:
 
 def get_vector_path(
         behavior: str, layer, model_name_path: str, 
-        logit: bool, stdev: bool, normalized=False
+        logit: bool, stdev: bool, prefix: str = "vec", normalized=False
     ) -> str:
     return os.path.join(
         get_vector_dir(behavior, normalized=normalized),
         "logit" if logit else "",
         "stdev" if stdev else "",
-        f"vec_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
+        f"{prefix}_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
     )
 
 
@@ -185,21 +185,30 @@ def get_mmlu_data():
 
 
 def get_steering_vector(behavior, layer, model_name_path, normalized=False, 
-        logit=False, stdev=False, device=None):
+        logit=False, stdev=False, device=None, prefix:str="vec"):
     return t.load(
-        get_vector_path(behavior, layer, model_name_path, logit, stdev, normalized=normalized),
+        get_vector_path(behavior, layer, model_name_path, logit, stdev, prefix, normalized=normalized),
         map_location=device,
     )
 
 
-def change_eraser_dtype(eraser : LeaceEraser, dtype):
-    proj_left = eraser.proj_left.to(dtype)
-    proj_right = eraser.proj_right.to(dtype)
-    bias = eraser.bias.to(dtype)
-    return LeaceEraser(proj_left, proj_right, bias)
+def change_eraser_dtype(eraser : LeaceEraser | QuadraticEditor, dtype):
+    if isinstance(eraser, QuadraticEditor):
+        class_means = eraser.class_means.to(dtype)
+        ot_maps = eraser.ot_maps.to(dtype)
+        return QuadraticEditor(class_means, ot_maps)
+    elif isinstance(eraser, LeaceEraser):
+        proj_left = eraser.proj_left.to(dtype)
+        proj_right = eraser.proj_right.to(dtype)
+        bias = eraser.bias.to(dtype)
+        return LeaceEraser(proj_left, proj_right, bias)
+    else:
+        raise ValueError(f"eraser must be a LeaceEraser or a QuadraticEditor, not {type(eraser)}")
 
 
 def get_steering_eraser(behavior, layer, model_name_path, logit=False, device=None, prefix:str="eras"):
+    if prefix == "quadall":
+        prefix = "quad"
     return t.load(
         get_eraser_path(behavior, layer, model_name_path, logit, prefix),
         map_location=device,

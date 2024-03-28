@@ -6,7 +6,7 @@ python generate_vectors.py --layers $(seq 0 31) --save_activations --use_base_mo
 """
 
 import json
-from concept_erasure import LeaceFitter
+from concept_erasure import LeaceFitter, QuadraticFitter
 import torch as t
 from torch.utils.data import Dataset
 from transformers import AutoTokenizer
@@ -104,12 +104,20 @@ def generate_save_vectors_for_behavior(
 
     for layer in layers:
         act_dim = model.model.model.layers[layer].block.hidden_size
-        fitters[layer] = LeaceFitter(
-            act_dim, (1 if logit else 2),
-            device=model.device,
-            method=leace_method,
-            dtype=t.float64,
-        )
+        if leace_method == "quad":
+            assert not logit, "can't do logit with quadratic fitter"
+            fitters[layer] = QuadraticFitter(
+                act_dim, 3,
+                device=model.device,
+                dtype=t.float64,
+            )
+        else:
+            fitters[layer] = LeaceFitter(
+                act_dim, (1 if logit else 2),
+                device=model.device,
+                method=leace_method,
+                dtype=t.float64,
+            )
 
     for p_tokens, n_tokens in tqdm(dataset, desc="Processing prompts"):
         p_tokens = p_tokens.to(model.device)
@@ -127,15 +135,18 @@ def generate_save_vectors_for_behavior(
             p_activations = model.get_last_activations(layer)[0, position, :].detach()
             pos_activations[layer].append(p_activations.cpu())
 
+            x = p_activations[None]
+
             if logit:
                 AB_logit = (logits[1] - logits[0])
                 AB_logits[layer].append(AB_logit.cpu())
 
-                x = p_activations[None]
                 z = AB_logit[None][None]
                 fitters[layer].update(x, z)
+            elif leace_method == "quad":
+                fitters[layer].update_single(x, 1)
+                fitters[layer].update_single(x, 2)
             else:
-                x = p_activations[None]
                 z = t.tensor([[0, 1]], device=x.device)
                 fitters[layer].update(x, z)
         if not logit:
@@ -146,8 +157,13 @@ def generate_save_vectors_for_behavior(
                 neg_activations[layer].append(n_activations.cpu())
             
                 x = n_activations[None]
-                z = t.tensor([[1, 0]], device=x.device)
-                fitters[layer].update(x, z)
+
+                if leace_method == "quad":
+                    fitters[layer].update_single(x, 0)
+                    fitters[layer].update_single(x, 2)
+                else:
+                    z = t.tensor([[1, 0]], device=x.device)
+                    fitters[layer].update(x, z)
 
     for layer in layers:
         all_pos_layer = t.stack(pos_activations[layer])
@@ -159,19 +175,33 @@ def generate_save_vectors_for_behavior(
         else:
             all_neg_layer = t.stack(neg_activations[layer])
             vec = (all_pos_layer - all_neg_layer).mean(dim=0)
-        eraser = fitters[layer].eraser
+        mean = (all_pos_layer + all_neg_layer).mean(dim=0) / 2
+        eraser = fitters[layer].editor() if leace_method == "quad" else fitters[layer].eraser
 
-        if stdev:
+        if leace_method == "leace":
             sigma = fitters[layer].sigma_xx.to(vec.device)
             L = t.linalg.cholesky(sigma + 1e-6 * t.eye(sigma.shape[0], device=sigma.device))
             precision = t.cholesky_inverse(L)
             
             vec64 = vec.to(precision.dtype)
-            vec /= (vec64 @ precision @ vec64).sqrt().to(vec.dtype)
+            
+            if stdev:
+                vec /= (vec64 @ precision @ vec64).sqrt().to(vec.dtype)
+
+            lda = (precision @ vec64).to(vec.dtype)
+
+            t.save(
+                lda,
+                get_vector_path(behavior, layer, model.model_name_path, logit, stdev, prefix="lda"),
+            )
 
         t.save(
             vec,
             get_vector_path(behavior, layer, model.model_name_path, logit, stdev),
+        )
+        t.save(
+            mean,
+            get_vector_path(behavior, layer, model.model_name_path, logit, stdev, prefix="mean"),
         )
         t.save(
             eraser,
@@ -220,11 +250,14 @@ if __name__ == "__main__":
     parser.add_argument("--use_base_model", action="store_true", default=False)
     parser.add_argument("--model_size", type=str, choices=["7b", "13b"], default="7b")
     parser.add_argument("--behaviors", nargs="+", type=str, default=ALL_BEHAVIORS)
-    parser.add_argument("--method", type=str, choices=["leace", "orth"], default="leace")
+    parser.add_argument("--method", type=str, choices=["leace", "orth", "quad"], default="leace")
     parser.add_argument("--logit", action="store_true", default=False)
     parser.add_argument("--stdev", action="store_true", default=False)
 
     args = parser.parse_args()
+    if args.method != "leace" and args.stdev:
+        raise ValueError("Can't use stdev with method other than leace")
+
     generate_save_vectors(
         args.layers,
         args.save_activations,

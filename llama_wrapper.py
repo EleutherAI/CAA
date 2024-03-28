@@ -2,7 +2,7 @@ import torch as t
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from matplotlib import pyplot as plt
 from matplotlib.ticker import ScalarFormatter
-from utils.helpers import add_vector_after_position, find_instruction_end_postion, get_model_path
+from utils.helpers import steer_after_position, find_instruction_end_postion, get_model_path
 from utils.tokenize import (
     tokenize_llama_chat,
     tokenize_llama_base,
@@ -53,6 +53,8 @@ class BlockOutputWrapper(t.nn.Module):
         self.after_position = None
 
         self.eraser = None
+        self.threshold = None
+        self.class_vector = None
 
         self.save_internal_decodings = False
 
@@ -71,15 +73,17 @@ class BlockOutputWrapper(t.nn.Module):
                 t.norm(last_token_activations) * t.norm(self.calc_dot_product_with)
             )
             self.dot_products.append((top_token, dot_product.cpu().item()))
-        if self.add_activations is not None:
-            augmented_output = add_vector_after_position(
-                matrix=output[0],
-                vector=self.add_activations,
-                position_ids=kwargs["position_ids"],
-                after=self.after_position,
-                eraser=self.eraser,
-            )
-            output = (augmented_output,) + output[1:]
+        
+        augmented_output = steer_after_position(
+            matrix=output[0],
+            vector=self.add_activations,
+            position_ids=kwargs["position_ids"],
+            after=self.after_position,
+            eraser=self.eraser,
+            threshold=self.threshold,
+            class_vector=self.class_vector,
+        )
+        output = (augmented_output,) + output[1:]
 
         if not self.save_internal_decodings:
             return output
@@ -104,6 +108,10 @@ class BlockOutputWrapper(t.nn.Module):
     def add(self, activations):
         self.add_activations = activations
 
+    def classifier(self, threshold, class_vector):
+        self.threshold = threshold
+        self.class_vector = class_vector
+
     def erase(self, eraser):
         self.eraser = eraser
 
@@ -124,9 +132,11 @@ class LlamaWrapper:
         size: str = "7b",
         use_chat: bool = True,
         override_model_weights_path: Optional[str] = None,
+        after_instr: bool = True,
     ):
         self.device = "cuda" if t.cuda.is_available() else "cpu"
         self.use_chat = use_chat
+        self.after_instr = after_instr
         self.model_name_path = get_model_path(size, not use_chat)
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_name_path, token=hf_token
@@ -162,8 +172,11 @@ class LlamaWrapper:
 
     def generate(self, tokens, max_new_tokens=100):
         with t.no_grad():
-            instr_pos = find_instruction_end_postion(tokens[0], self.END_STR)
-            self.set_after_positions(instr_pos)
+            if self.after_instr:
+                instr_pos = find_instruction_end_postion(tokens[0], self.END_STR)
+                self.set_after_positions(instr_pos)
+            else:
+                self.set_after_positions(None)
             generated = self.model.generate(
                 inputs=tokens, max_new_tokens=max_new_tokens, top_k=1
             )
@@ -181,8 +194,11 @@ class LlamaWrapper:
 
     def get_logits(self, tokens):
         with t.no_grad():
-            instr_pos = find_instruction_end_postion(tokens[0], self.END_STR)
-            self.set_after_positions(instr_pos)
+            if self.after_instr:
+                instr_pos = find_instruction_end_postion(tokens[0], self.END_STR)
+                self.set_after_positions(instr_pos)
+            else:
+                self.set_after_positions(None)
             logits = self.model(tokens).logits
             return logits
 
@@ -201,6 +217,9 @@ class LlamaWrapper:
 
     def set_add_activations(self, layer, activations):
         self.model.model.layers[layer].add(activations)
+
+    def set_classifier(self, layer, threshold, class_vector):
+        self.model.model.layers[layer].classifier(threshold, class_vector)
 
     def set_erase(self, layer, eraser):
         self.model.model.layers[layer].erase(eraser)

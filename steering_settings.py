@@ -18,6 +18,8 @@ class SteeringSettings:
     logit: bool = False
     stdev: bool = False
     normalized: bool = True
+    classify: Optional[str] = None
+    after_instr: bool = True
 
     def __post_init__(self):
         assert self.behavior in ALL_BEHAVIORS, f"Invalid behavior {self.behavior}"
@@ -48,6 +50,10 @@ class SteeringSettings:
             elements["stdev"] = True
         if not self.normalized:
             elements["normalized"] = False
+        if self.classify is not None:
+            elements["classify"] = self.classify
+        if not self.after_instr:
+            elements["after"] = False
         
         return "__".join([f"{k}={str(v).replace('/', '-')}" for k, v in elements.items() if v is not None])
 
@@ -73,6 +79,8 @@ class SteeringSettings:
             "logit": True if self.logit else None,
             "stdev": True if self.stdev else None,
             "normalized": False if not self.normalized else None,
+            "classify": self.classify,
+            "after": False if not self.after_instr else None,
         }
 
         filtered_elements = {k: v for k, v in elements.items() if v is not None}

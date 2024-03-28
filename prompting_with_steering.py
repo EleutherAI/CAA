@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 import argparse
 from typing import List, Dict, Optional
 from tqdm import tqdm
+from concept_erasure import LeaceEraser, QuadraticEditor
 from utils.helpers import get_a_b_probs
 from utils.tokenize import E_INST
 from steering_settings import SteeringSettings
@@ -125,6 +126,7 @@ def test_steering(
         size=settings.model_size,
         use_chat=not settings.use_base_model,
         override_model_weights_path=settings.override_model_weights_path,
+        after_instr=settings.after_instr,
     )
     a_token_id = model.tokenizer.convert_tokens_to_ids("A")
     b_token_id = model.tokenizer.convert_tokens_to_ids("B")
@@ -137,14 +139,23 @@ def test_steering(
         layer_to_get = layer
         if settings.override_vector is not None:
             layer_to_get = settings.override_vector
+
         vector = get_steering_vector(settings.behavior, layer_to_get, name_path, 
             normalized=settings.normalized, logit=settings.logit, stdev=settings.stdev, device=model.device)
+        if settings.classify is not None:
+            mean_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, 
+                normalized=False, logit=settings.logit, stdev=settings.stdev, device=model.device, prefix="mean")
+            if settings.classify == "lda":
+                lda_vector = get_steering_vector(settings.behavior, layer_to_get, name_path,
+                    normalized=False, logit=settings.logit, stdev=settings.stdev, device=model.device, prefix="lda")
         if settings.model_size != "7b":
             vector = vector.half()
         if settings.leace:
             eraser = get_steering_eraser(settings.behavior, layer_to_get, name_path, 
                 logit=settings.logit, device=model.device, prefix=settings.leace_method)
             eraser = change_eraser_dtype(eraser, vector.dtype)
+            assert eraser is not None
+
         for multiplier in multipliers:
             result_save_suffix = settings.make_result_save_suffix(
                 layer=layer, multiplier=multiplier
@@ -158,14 +169,52 @@ def test_steering(
                 continue
             results = []
             for item in tqdm(test_data, desc=f"Layer {layer}, multiplier {multiplier}"):
+                
+                # TODO refactor spaghetti into a different carb
                 model.reset_all()
-                model.set_add_activations(
-                    layer, multiplier * vector
-                )
+
+                # eraser
                 if settings.leace:
+                    if settings.leace_method in ["quad", "quadall"]:
+                        assert isinstance(eraser, QuadraticEditor), type(eraser)
+                        if multiplier == 0:
+                            eraser_callback = None
+                        else:
+                            target_z = int(multiplier > 0)
+                            if settings.leace_method == "quad":
+                                source_z = 1 - target_z
+                            elif settings.leace_method == "quadall":
+                                source_z = 2
+                            eraser_callback = lambda x: eraser.transport(x, source_z, target_z)
+                    else:
+                        eraser_callback = eraser
                     model.set_erase(
-                        layer, eraser
+                        layer, eraser_callback
                     )
+                
+                # vector
+                if not (settings.leace and settings.leace_method == "quad"):
+                    model.set_add_activations(
+                        layer, multiplier * vector
+                    )
+
+                # classifier
+                if settings.classify is not None:
+                    if settings.classify == "lda":
+                        class_vector = lda_vector
+                    elif settings.classify == "mean":
+                        class_vector = vector
+                    else:
+                        raise ValueError(f"Invalid classification method: {settings.classify}")
+
+                    if multiplier < 0:
+                        class_vector = -class_vector
+
+                    threshold = class_vector @ mean_vector
+                    model.set_classifier(
+                        layer, threshold, class_vector
+                    )
+
                 result = process_methods[settings.type](
                     item=item,
                     model=model,
@@ -205,10 +254,12 @@ if __name__ == "__main__":
     parser.add_argument("--override_model_weights_path", type=str, default=None)
     parser.add_argument("--overwrite", action="store_true", default=False)
     parser.add_argument("--leace", action="store_true", default=False)
-    parser.add_argument("--method", type=str, choices=["leace", "orth"], default="leace")
+    parser.add_argument("--method", type=str, choices=["leace", "orth", "quad", "quadall"], default="leace")
     parser.add_argument("--logit", action="store_true", default=False)
     parser.add_argument("--stdev", action="store_true", default=False)
     parser.add_argument("--unnormalized", action="store_false", dest="normalized")
+    parser.add_argument("--classify", type=str, choices=["mean", "lda"], default=None)
+    parser.add_argument("--after", action="store_true", default=False)
 
     args = parser.parse_args()
 
@@ -225,7 +276,9 @@ if __name__ == "__main__":
     steering_settings.logit = args.logit
     steering_settings.stdev = args.stdev
     steering_settings.normalized = args.normalized and not args.stdev
-
+    steering_settings.classify = args.classify
+    steering_settings.after_instr = args.after
+    
     for behavior in args.behaviors:
         steering_settings.behavior = behavior
         test_steering(

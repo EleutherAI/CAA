@@ -1,5 +1,6 @@
 import torch as t
 import matplotlib.pyplot as plt
+import einops as e
 
 def set_plotting_settings():
     plt.style.use('seaborn-v0_8')
@@ -22,16 +23,68 @@ def set_plotting_settings():
 
 
 
-def add_vector_after_position(matrix, vector, position_ids, after=None, eraser=None):
-    after_id = after
-    if after_id is None:
-        after_id = position_ids.min().item() - 1
+def steer_after_position(
+        matrix, vector, position_ids, after=None, 
+        eraser=None, threshold=None, class_vector=None,
+        n_decomp=None):
+    # n: sequence length
+    # d: embedding size
 
-    mask = position_ids >= after_id
+    # matrix: (n, d)
+    # vector: (d, )
+    # position_ids: (n, )
+    # after: int
+    # eraser: function
+    # threshold: float
+    # class_vector: (d, )
+    # n_decomp: int
+
+    # mask: (n, )
+
+    if after is None:
+        mask = t.ones_like(position_ids, dtype=t.bool)
+    else:
+        mask = position_ids >= after
+
+    if n_decomp is not None:
+        # untested!
+        
+        h = matrix[mask]
+        b, d = h.size(0), h.size(1)
+
+        la = t.rand(b, n_decomp, device=h.device)
+        a = t.softmax(la, dim=1)  # (b, n)
+        eta = t.rand(b, n_decomp, device=h.device)
+        a_norms = e.einsum(a, a, 'b n, b n -> b')
+        a_pinv = a / a_norms[:, None]  # (b, n)
+        a_eta = e.einsum(a, eta, 'b n, b n -> b')
+        x = a_pinv * (1 - a_eta) + eta  # (b, n)
+        G = e.einsum(x, h, 'b n, b d -> b n d')
+
+        if threshold is not None:
+            submask = G @ class_vector < threshold  # (b, n)
+        else:
+            submask = t.ones_like(x, dtype=t.bool)
+        
+        if eraser is not None:
+            G[submask] = eraser(G[submask])
+        if vector is not None:
+            G[submask] += vector
+        
+        h = e.einsum(G, a, 'b n d, b n -> b d')
+        matrix[mask] = h
+
+        return matrix
+
+
+    if threshold is not None:
+        mask &= matrix @ class_vector < threshold
     
     if eraser is not None:
         matrix[mask] = eraser(matrix[mask])
-    matrix[mask] += vector
+    if vector is not None:
+        matrix[mask] += vector
+
     return matrix
 
 
