@@ -20,6 +20,7 @@ class SteeringSettings:
     normalized: bool = True
     classify: Optional[str] = None
     after_instr: bool = True
+    open_response: bool = False
 
     def __post_init__(self):
         assert self.behavior in ALL_BEHAVIORS, f"Invalid behavior {self.behavior}"
@@ -54,6 +55,8 @@ class SteeringSettings:
             elements["classify"] = self.classify
         if not self.after_instr:
             elements["after"] = False
+        if self.open_response:
+            elements["open"] = True
         
         return "__".join([f"{k}={str(v).replace('/', '-')}" for k, v in elements.items() if v is not None])
 
@@ -81,6 +84,7 @@ class SteeringSettings:
             "normalized": False if not self.normalized else None,
             "classify": self.classify,
             "after": False if not self.after_instr else None,
+            "open": True if self.open_response else None,
         }
 
         filtered_elements = {k: v for k, v in elements.items() if v is not None}

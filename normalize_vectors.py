@@ -19,6 +19,7 @@ def normalize_vectors(model_size: str, is_base: bool, n_layers: int, args):
                 behavior, layer, get_model_path(model_size, is_base=is_base),
                 logit=args.logit,
                 stdev=args.stdev,
+                open_response=args.open,
                 )
             vec = t.load(vec_path)
             norm = vec.norm().item()
@@ -43,6 +44,7 @@ if __name__ == "__main__":
     parser.add_argument("--mode", type=str, choices=["7chat", "13chat", "7base", "all"], default="all")
     parser.add_argument("--logit", action="store_true", default=False)
     parser.add_argument("--stdev", action="store_true", default=False)
+    parser.add_argument("--open", action="store_true", default=False)
 
     args = parser.parse_args()
 

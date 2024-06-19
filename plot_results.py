@@ -492,6 +492,8 @@ def steering_settings_from_args(args, behavior: str) -> SteeringSettings:
     steering_settings.normalized = args.normalized and not args.stdev
     steering_settings.classify = args.classify
     steering_settings.after_instr = args.after
+    steering_settings.open_response = args.open
+
     if len(args.override_weights) > 0:
         steering_settings.override_model_weights_path = args.override_weights[0]
     return steering_settings
@@ -519,14 +521,19 @@ if __name__ == "__main__":
     parser.add_argument("--model_size", type=str, choices=["7b", "13b"], default="7b")
     parser.add_argument("--override_weights", type=str, nargs="+", default=[])
     parser.add_argument("--leace", action="store_true", default=False)
-    parser.add_argument("--method", type=str, choices=["leace", "orth", "quad", "quadall"], default="leace")
+    parser.add_argument("--method", type=str, choices=["leace", "orth", "quad", "qall"], default="leace")
     parser.add_argument("--logit", action="store_true", default=False)
     parser.add_argument("--stdev", action="store_true", default=False)
     parser.add_argument("--unnormalized", action="store_false", dest="normalized")
     parser.add_argument("--classify", type=str, choices=["mean", "lda"], default=None)
     parser.add_argument("--after", action="store_true", default=False)
+    parser.add_argument("--overwrite", action="store_true", default=False)
+    parser.add_argument("--open", action="store_true", default=False)
     
     args = parser.parse_args()
+
+    if args.overwrite:
+        print("[WARN] --overwrite does nothing (batch script hack)")
 
     steering_settings = steering_settings_from_args(args, args.behaviors[0])
 

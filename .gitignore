@@ -13,10 +13,9 @@ logs
 .hypothesis
 */.DS_Store
 vectors/**/*.pt
-erasers/*/*.pt
-erasers/*/logit/*.pt
-normalized_vectors/*/*.pt
-normalized_vectors/*/logit/*.pt
+erasers/**/*.pt
+normalized_vectors/**/*.pt
 results/**/*.json
 analysis/**/*.*
 output/**
+0405

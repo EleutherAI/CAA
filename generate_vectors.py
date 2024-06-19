@@ -21,10 +21,12 @@ from behaviors import (
     get_vector_dir,
     get_activations_dir,
     get_ab_data_path,
+    get_open_response_data_path,
     get_vector_path,
     get_eraser_path,
     get_activations_path,
-    ALL_BEHAVIORS
+    ALL_BEHAVIORS,
+    force_save,
 )
 
 load_dotenv()
@@ -77,8 +79,12 @@ def generate_save_vectors_for_behavior(
     leace_method: str,
     logit: bool,
     stdev: bool,
+    open_response: bool,
 ):
-    data_path = get_ab_data_path(behavior)
+    if open_response:
+        data_path = get_open_response_data_path(behavior)
+    else:
+        data_path = get_ab_data_path(behavior)
     if not os.path.exists(get_vector_dir(behavior)):
         os.makedirs(get_vector_dir(behavior))
     if save_activations and not os.path.exists(get_activations_dir(behavior)):
@@ -124,13 +130,21 @@ def generate_save_vectors_for_behavior(
         n_tokens = n_tokens.to(model.device)
         assert p_tokens.shape[0] == n_tokens.shape[0] == 1, f"data too long: {p_tokens.shape} {n_tokens.shape}"
         model.reset_all()
+
         p_tok = p_tokens[0, -2]
         n_tok = n_tokens[0, -2]
         logits = model.get_logits(p_tokens)[0, -2, (n_tok, p_tok)].detach()
+
         for layer in layers:
             # read *output* position [A/B] for logit mode
             # *input* position for non-logit mode
-            position = -3 if logit else -2
+            # *last* position for open response
+            if logit:
+                position = -3
+            elif not open_response:
+                position = -2
+            else:
+                position = -1
 
             p_activations = model.get_last_activations(layer)[0, position, :].detach()
             pos_activations[layer].append(p_activations.cpu())
@@ -165,7 +179,7 @@ def generate_save_vectors_for_behavior(
                     z = t.tensor([[1, 0]], device=x.device)
                     fitters[layer].update(x, z)
 
-    for layer in layers:
+    for layer in tqdm(layers, desc="Saving artifacts"):
         all_pos_layer = t.stack(pos_activations[layer])
         if logit:
             all_AB_logits = t.stack(AB_logits[layer])
@@ -190,22 +204,22 @@ def generate_save_vectors_for_behavior(
 
             lda = (precision @ vec64).to(vec.dtype)
 
-            t.save(
+            force_save(
                 lda,
-                get_vector_path(behavior, layer, model.model_name_path, logit, stdev, prefix="lda"),
+                get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response, prefix="lda"),
             )
 
-        t.save(
+        force_save(
             vec,
-            get_vector_path(behavior, layer, model.model_name_path, logit, stdev),
+            get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response),
         )
-        t.save(
+        force_save(
             mean,
-            get_vector_path(behavior, layer, model.model_name_path, logit, stdev, prefix="mean"),
+            get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response, prefix="mean"),
         )
-        t.save(
+        force_save(
             eraser,
-            get_eraser_path(behavior, layer, model.model_name_path, logit, leace_method),
+            get_eraser_path(behavior, layer, model.model_name_path, logit, open_response, leace_method),
         )
         if save_activations:
             t.save(
@@ -253,10 +267,19 @@ if __name__ == "__main__":
     parser.add_argument("--method", type=str, choices=["leace", "orth", "quad"], default="leace")
     parser.add_argument("--logit", action="store_true", default=False)
     parser.add_argument("--stdev", action="store_true", default=False)
+    parser.add_argument("--open", action="store_true", default=False)
 
     args = parser.parse_args()
     if args.method != "leace" and args.stdev:
         raise ValueError("Can't use stdev with method other than leace")
+    if args.open and args.logit:
+        raise ValueError("Can't use logit with open response")
+    if args.save_activations and args.open:
+        raise NotImplementedError("Can't save activations with open response")
+    if args.save_activations and args.logit:
+        raise NotImplementedError("Can't save activations with logit")
+
+    
 
     generate_save_vectors(
         args.layers,
@@ -267,4 +290,5 @@ if __name__ == "__main__":
         leace_method=args.method,
         logit=args.logit,
         stdev=args.stdev,
+        open_response=args.open,
     )

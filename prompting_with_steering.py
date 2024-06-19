@@ -27,6 +27,7 @@ from behaviors import (
     get_ab_test_data,
     ALL_BEHAVIORS,
     get_results_dir,
+    QUAD_MODES,
 )
 
 load_dotenv()
@@ -140,18 +141,18 @@ def test_steering(
         if settings.override_vector is not None:
             layer_to_get = settings.override_vector
 
-        vector = get_steering_vector(settings.behavior, layer_to_get, name_path, 
+        vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
             normalized=settings.normalized, logit=settings.logit, stdev=settings.stdev, device=model.device)
         if settings.classify is not None:
-            mean_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, 
+            mean_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
                 normalized=False, logit=settings.logit, stdev=settings.stdev, device=model.device, prefix="mean")
             if settings.classify == "lda":
-                lda_vector = get_steering_vector(settings.behavior, layer_to_get, name_path,
+                lda_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
                     normalized=False, logit=settings.logit, stdev=settings.stdev, device=model.device, prefix="lda")
         if settings.model_size != "7b":
             vector = vector.half()
         if settings.leace:
-            eraser = get_steering_eraser(settings.behavior, layer_to_get, name_path, 
+            eraser = get_steering_eraser(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
                 logit=settings.logit, device=model.device, prefix=settings.leace_method)
             eraser = change_eraser_dtype(eraser, vector.dtype)
             assert eraser is not None
@@ -175,7 +176,7 @@ def test_steering(
 
                 # eraser
                 if settings.leace:
-                    if settings.leace_method in ["quad", "quadall"]:
+                    if settings.leace_method in QUAD_MODES:
                         assert isinstance(eraser, QuadraticEditor), type(eraser)
                         if multiplier == 0:
                             eraser_callback = None
@@ -183,8 +184,10 @@ def test_steering(
                             target_z = int(multiplier > 0)
                             if settings.leace_method == "quad":
                                 source_z = 1 - target_z
-                            elif settings.leace_method == "quadall":
+                            elif settings.leace_method == "qall":
                                 source_z = 2
+                            else:
+                                raise ValueError(f"Unknown quadratic leace method: {settings.leace_method}")
                             eraser_callback = lambda x: eraser.transport(x, source_z, target_z)
                     else:
                         eraser_callback = eraser
@@ -193,7 +196,7 @@ def test_steering(
                     )
                 
                 # vector
-                if not (settings.leace and settings.leace_method == "quad"):
+                if not (settings.leace and settings.leace_method in QUAD_MODES):
                     model.set_add_activations(
                         layer, multiplier * vector
                     )
@@ -254,12 +257,13 @@ if __name__ == "__main__":
     parser.add_argument("--override_model_weights_path", type=str, default=None)
     parser.add_argument("--overwrite", action="store_true", default=False)
     parser.add_argument("--leace", action="store_true", default=False)
-    parser.add_argument("--method", type=str, choices=["leace", "orth", "quad", "quadall"], default="leace")
+    parser.add_argument("--method", type=str, choices=["leace", "orth", "quad", "qall"], default="leace")
     parser.add_argument("--logit", action="store_true", default=False)
     parser.add_argument("--stdev", action="store_true", default=False)
     parser.add_argument("--unnormalized", action="store_false", dest="normalized")
     parser.add_argument("--classify", type=str, choices=["mean", "lda"], default=None)
     parser.add_argument("--after", action="store_true", default=False)
+    parser.add_argument("--open", action="store_true", default=False)
 
     args = parser.parse_args()
 
@@ -278,6 +282,7 @@ if __name__ == "__main__":
     steering_settings.normalized = args.normalized and not args.stdev
     steering_settings.classify = args.classify
     steering_settings.after_instr = args.after
+    steering_settings.open_response = args.open
     
     for behavior in args.behaviors:
         steering_settings.behavior = behavior
