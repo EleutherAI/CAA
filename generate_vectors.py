@@ -189,7 +189,7 @@ def generate_save_vectors_for_behavior(
         else:
             all_neg_layer = t.stack(neg_activations[layer])
             vec = (all_pos_layer - all_neg_layer).mean(dim=0)
-        mean = (all_pos_layer + all_neg_layer).mean(dim=0) / 2
+            mean = (all_pos_layer + all_neg_layer).mean(dim=0) / 2
         eraser = fitters[layer].editor() if leace_method == "quad" else fitters[layer].eraser
 
         if leace_method == "leace":
@@ -213,10 +213,11 @@ def generate_save_vectors_for_behavior(
             vec,
             get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response),
         )
-        force_save(
-            mean,
-            get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response, prefix="mean"),
-        )
+        if not logit:
+            force_save(
+                mean,
+                get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response, prefix="mean"),
+            )
         force_save(
             eraser,
             get_eraser_path(behavior, layer, model.model_name_path, logit, open_response, leace_method),
@@ -252,6 +253,7 @@ def generate_save_vectors(
         HUGGINGFACE_TOKEN, size=model_size, use_chat=not use_base_model
     )
     for behavior in behaviors:
+        print(f"Generating vectors for {behavior}")
         generate_save_vectors_for_behavior(
             layers, save_activations, behavior, model, **kwargs
         )
@@ -292,3 +294,5 @@ if __name__ == "__main__":
         stdev=args.stdev,
         open_response=args.open,
     )
+
+    print("Done!")

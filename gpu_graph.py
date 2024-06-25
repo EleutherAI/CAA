@@ -68,11 +68,10 @@ def launch_available(ctx: Context):
             elif avail_jobs:
                 print("[WARN] No free GPUs -- this should not happen! :(")
                 print(ctx)
-                print(f"# of free GPUs: {len(ctx.free_gpus)}")
             else:
                 print("Blocked on dependencies :|")
-                print(f"Running: {[j for j in ctx.claimed if j not in ctx.completed]}")
-                print(f"Free GPUs: {ctx.free_gpus}")
+            print(f"Running: {[j for j in ctx.claimed if j not in ctx.completed]}")
+            print(f"Free GPUs: {ctx.free_gpus}")
 
     for p in processes:
         p.start()

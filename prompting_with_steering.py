@@ -132,30 +132,44 @@ def test_steering(
     a_token_id = model.tokenizer.convert_tokens_to_ids("A")
     b_token_id = model.tokenizer.convert_tokens_to_ids("B")
     model.set_save_internal_decodings(False)
+    model_depth = len(model.model.model.layers)
+
     test_data = test_datasets[settings.type]
     for layer in layers:
+        if layer == -1:
+            layer = "all"  # str to catch bugs
         name_path = model.model_name_path
         if settings.override_vector_model is not None:
             name_path = settings.override_vector_model
-        layer_to_get = layer
-        if settings.override_vector is not None:
-            layer_to_get = settings.override_vector
 
-        vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
-            normalized=settings.normalized, logit=settings.logit, stdev=settings.stdev, device=model.device)
-        if settings.classify is not None:
-            mean_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
-                normalized=False, logit=settings.logit, stdev=settings.stdev, device=model.device, prefix="mean")
-            if settings.classify == "lda":
-                lda_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
-                    normalized=False, logit=settings.logit, stdev=settings.stdev, device=model.device, prefix="lda")
-        if settings.model_size != "7b":
-            vector = vector.half()
-        if settings.leace:
-            eraser = get_steering_eraser(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
-                logit=settings.logit, device=model.device, prefix=settings.leace_method)
-            eraser = change_eraser_dtype(eraser, vector.dtype)
-            assert eraser is not None
+        def get_artifacts(layer_to_get):
+            vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
+                normalized=settings.normalized, logit=settings.logit, stdev=settings.stdev, device=model.device)
+            mean_vector, lda_vector, eraser = None, None, None
+
+            if settings.classify is not None:
+                mean_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
+                    normalized=False, logit=settings.logit, stdev=settings.stdev, device=model.device, prefix="mean")
+                if settings.classify == "lda":
+                    lda_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
+                        normalized=False, logit=settings.logit, stdev=settings.stdev, device=model.device, prefix="lda")
+            if settings.model_size != "7b":
+                vector = vector.half()
+            if settings.leace:
+                eraser = get_steering_eraser(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
+                    logit=settings.logit, device=model.device, prefix=settings.leace_method)
+                eraser = change_eraser_dtype(eraser, vector.dtype)
+                assert eraser is not None
+
+            return vector, mean_vector, lda_vector, eraser
+
+        if layer == "all":
+            tuples = [get_artifacts(i) for i in range(model_depth)]
+        else:
+            layer_to_get = layer
+            if settings.override_vector is not None:
+                layer_to_get = settings.override_vector
+            vector, mean_vector, lda_vector, eraser = get_artifacts(layer_to_get)
 
         for multiplier in multipliers:
             result_save_suffix = settings.make_result_save_suffix(
@@ -169,11 +183,9 @@ def test_steering(
                 print("Found existing", save_filename, "- skipping")
                 continue
             results = []
-            for item in tqdm(test_data, desc=f"Layer {layer}, multiplier {multiplier}"):
-                
-                # TODO refactor spaghetti into a different carb
-                model.reset_all()
 
+
+            def setup_layer(layer, vector, mean_vector, lda_vector, eraser):
                 # eraser
                 if settings.leace:
                     if settings.leace_method in QUAD_MODES:
@@ -218,6 +230,18 @@ def test_steering(
                         layer, threshold, class_vector
                     )
 
+
+            for item in tqdm(test_data, desc=f"Layer {layer}, multiplier {multiplier}"):
+                
+                # TODO determine if we actually need to reset before each item!
+                model.reset_all()
+
+                if layer == "all":
+                    for i, (vector, mean_vector, lda_vector, eraser) in enumerate(tuples):
+                        setup_layer(i, vector, mean_vector, lda_vector, eraser)
+                else:
+                    setup_layer(layer, vector, mean_vector, lda_vector, eraser)
+
                 result = process_methods[settings.type](
                     item=item,
                     model=model,
@@ -226,6 +250,8 @@ def test_steering(
                     b_token_id=b_token_id,
                 )
                 results.append(result)
+
+
             with open(
                 save_filename,
                 "w",
@@ -235,7 +261,7 @@ def test_steering(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--layers", nargs="+", type=int, required=True)
+    parser.add_argument("--layers", nargs="+", type=int, required=True)  # -1 for all
     parser.add_argument("--multipliers", nargs="+", type=float, required=True)
     parser.add_argument(
         "--behaviors",
@@ -262,7 +288,7 @@ if __name__ == "__main__":
     parser.add_argument("--stdev", action="store_true", default=False)
     parser.add_argument("--unnormalized", action="store_false", dest="normalized")
     parser.add_argument("--classify", type=str, choices=["mean", "lda"], default=None)
-    parser.add_argument("--after", action="store_true", default=False)
+    parser.add_argument("--all_tokens", action="store_false", dest="after")
     parser.add_argument("--open", action="store_true", default=False)
 
     args = parser.parse_args()
@@ -285,6 +311,7 @@ if __name__ == "__main__":
     steering_settings.open_response = args.open
     
     for behavior in args.behaviors:
+        print(f"Steering for behavior {behavior}")
         steering_settings.behavior = behavior
         test_steering(
             layers=args.layers,
@@ -292,3 +319,5 @@ if __name__ == "__main__":
             settings=steering_settings,
             overwrite=args.overwrite,
         )
+
+    print("Done!")
