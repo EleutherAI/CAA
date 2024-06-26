@@ -135,16 +135,17 @@ def generate_save_vectors_for_behavior(
         n_tok = n_tokens[0, -2]
         logits = model.get_logits(p_tokens)[0, -2, (n_tok, p_tok)].detach()
 
+        # read *output* position of [A/B] for logit mode
+        # *input* position of [A/B] for non-logit mode
+        # *last* position for open response
+        if logit:
+            position = -3
+        elif not open_response:
+            position = -2
+        else:
+            position = -1
+
         for layer in layers:
-            # read *output* position [A/B] for logit mode
-            # *input* position for non-logit mode
-            # *last* position for open response
-            if logit:
-                position = -3
-            elif not open_response:
-                position = -2
-            else:
-                position = -1
 
             p_activations = model.get_last_activations(layer)[0, position, :].detach()
             pos_activations[layer].append(p_activations.cpu())
@@ -167,7 +168,7 @@ def generate_save_vectors_for_behavior(
             model.reset_all()
             model.get_logits(n_tokens)
             for layer in layers:
-                n_activations = model.get_last_activations(layer)[0, -2, :].detach()
+                n_activations = model.get_last_activations(layer)[0, position, :].detach()
                 neg_activations[layer].append(n_activations.cpu())
             
                 x = n_activations[None]

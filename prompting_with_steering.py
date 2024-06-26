@@ -133,6 +133,7 @@ def test_steering(
     b_token_id = model.tokenizer.convert_tokens_to_ids("B")
     model.set_save_internal_decodings(False)
     model_depth = len(model.model.model.layers)
+    print(f"Model depth: {model_depth}")
 
     test_data = test_datasets[settings.type]
     for layer in layers:

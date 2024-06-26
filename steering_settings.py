@@ -68,7 +68,7 @@ class SteeringSettings:
     ):
         elements = {
             "layer": str(layer)+"_",
-            "multiplier": str(float(multiplier))+"_",
+            # "multiplier": str(float(multiplier))+"_",
             "behavior": self.behavior,
             "type": self.type,
             "system_prompt": self.system_prompt,
@@ -86,6 +86,9 @@ class SteeringSettings:
             "after": False if not self.after_instr else None,
             "open": True if self.open_response else None,
         }
+
+        if multiplier is not None:
+            elements["multiplier"] = str(float(multiplier))+"_"
 
         filtered_elements = {k: v for k, v in elements.items() if v is not None}
         remove_elements = {k for k, v in elements.items() if v is None}
