@@ -270,7 +270,7 @@ def mults_plot_grid(layers: list[int], multipliers: list[float],
     behaviors: list[str] = ALL_BEHAVIORS,
     rescale=False,
     colors=True,
-    sum=False,
+    ab_sum=False,
     ):
     if multipliers is None:
         mult_lists = [get_mults(layer, pair[0]) for layer, pair in zip(layers, settingses.values())]
@@ -295,7 +295,11 @@ def mults_plot_grid(layers: list[int], multipliers: list[float],
 
             # print('getting mprobs')
             mprobs = [get_mprobs(layer, m, settings) for m in mults]
-            match_probs, unmatch_probs = get_probs(layer, multiplier, settings, matching)
+            mu_pairs = [get_probs(layer, m, settings, True) for m in mults]
+            if ab_sum:
+                mprobs = [match_probs + unmatch_probs for match_probs, unmatch_probs in mu_pairs]
+            else:
+                mprobs = [match_probs / (match_probs + unmatch_probs) for match_probs, unmatch_probs in mu_pairs]
             means = [np.mean(m) for m in mprobs]
             xs = [m * scale for m in mults]
             # print('plotting')
@@ -436,6 +440,24 @@ plt.savefig("plots/open_mc_grid.png")
 
 fig, axs = mults_plot_grid([13, 13, 13] , None, {
     "CAA": (SteeringSettings(
+        model_size='7b', normalized=False, open_response=True
+        ), 'blue'), 
+    "CAA+orth": (SteeringSettings(
+        model_size='7b', normalized=False, leace=True, leace_method="orth", open_response=True
+        ), 'red'),
+    "CAA+leace": (SteeringSettings(
+        model_size='7b', normalized=False, leace=True, open_response=True
+        ), 'green'),
+},
+colors=False,
+ab_sum=True,
+)
+fig.suptitle("7B-chat layer 13: p(A) + p(B)\n(open -> MC)")
+plt.savefig("plots/open_mc_grid_sum.png")
+
+
+fig, axs = mults_plot_grid([13, 13, 13] , None, {
+    "CAA": (SteeringSettings(
         model_size='7b', normalized=False, open_response=True, after_instr=False,
         ), 'blue'), 
     "CAA+orth": (SteeringSettings(
@@ -466,6 +488,24 @@ colors=False,
 )
 fig.suptitle("7B-chat layer 13\n(MC -> MC)")
 plt.savefig("plots/mc_mc_grid.png")
+
+
+fig, axs = mults_plot_grid([13, 13, 13] , None, {
+    "CAA": (SteeringSettings(
+        model_size='7b', normalized=False,
+        ), 'blue'), 
+    "CAA+orth": (SteeringSettings(
+        model_size='7b', normalized=False, leace=True, leace_method="orth",
+        ), 'red'),
+    "CAA+leace": (SteeringSettings(
+        model_size='7b', normalized=False, leace=True,
+        ), 'green'),
+},
+colors=False,
+ab_sum=True,
+)
+fig.suptitle("7B-chat layer 13: p(A) + p(B)\n(MC -> MC)")
+plt.savefig("plots/mc_mc_grid_sum.png")
 
 
 fig, axs = mults_sample_grid([13, 13, 13] , None, {
