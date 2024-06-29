@@ -110,7 +110,7 @@ if __name__ == "__main__":
     # usage: python run_whatever.py 1,2,3,4,5,6,7
     if len(sys.argv) == 1:
         # default to all GPUs
-        gpus = range(8)
+        gpus = list(range(8))
     else:
         gpus = [int(gpu) for gpu in sys.argv[1].split(",")]
 
