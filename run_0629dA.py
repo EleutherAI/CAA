@@ -29,7 +29,8 @@ commands = {
 }
 
 for job in list(commands.keys()):
-    commands[job] += ' --only_instr'
+    if not job.startswith("gen_"):
+        commands[job] += ' --only_instr'
 
 for job in list(commands.keys()):
 
