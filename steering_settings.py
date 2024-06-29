@@ -20,6 +20,7 @@ class SteeringSettings:
     normalized: bool = True
     classify: Optional[str] = None
     after_instr: bool = True
+    only_instr: bool = False
     open_response: bool = False
 
     def __post_init__(self):
@@ -55,6 +56,8 @@ class SteeringSettings:
             elements["classify"] = self.classify
         if not self.after_instr:
             elements["after"] = False
+        if self.only_instr:
+            elements["instr"] = True
         if self.open_response:
             elements["open"] = True
         
@@ -84,6 +87,7 @@ class SteeringSettings:
             "normalized": False if not self.normalized else None,
             "classify": self.classify,
             "after": False if not self.after_instr else None,
+            "instr": True if self.only_instr else None,
             "open": True if self.open_response else None,
         }
 

@@ -128,6 +128,7 @@ def test_steering(
         use_chat=not settings.use_base_model,
         override_model_weights_path=settings.override_model_weights_path,
         after_instr=settings.after_instr,
+        only_instr=settings.only_instr,
     )
     a_token_id = model.tokenizer.convert_tokens_to_ids("A")
     b_token_id = model.tokenizer.convert_tokens_to_ids("B")
@@ -290,6 +291,7 @@ if __name__ == "__main__":
     parser.add_argument("--unnormalized", action="store_false", dest="normalized")
     parser.add_argument("--classify", type=str, choices=["mean", "lda"], default=None)
     parser.add_argument("--all_tokens", action="store_false", dest="after")
+    parser.add_argument("--only_instr", action="store_true", default=False)
     parser.add_argument("--open", action="store_true", default=False)
 
     args = parser.parse_args()
@@ -309,6 +311,7 @@ if __name__ == "__main__":
     steering_settings.normalized = args.normalized and not args.stdev
     steering_settings.classify = args.classify
     steering_settings.after_instr = args.after
+    steering_settings.only_instr = args.only_instr
     steering_settings.open_response = args.open
     
     for behavior in args.behaviors:

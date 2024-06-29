@@ -26,7 +26,7 @@ def set_plotting_settings():
 def steer_after_position(
         matrix, vector, position_ids, after=None, 
         eraser=None, threshold=None, class_vector=None,
-        n_decomp=None):
+        n_decomp=None, inverted=False):
     # n: sequence length
     # d: embedding size
 
@@ -45,6 +45,9 @@ def steer_after_position(
         mask = t.ones_like(position_ids, dtype=t.bool)
     else:
         mask = position_ids >= after
+
+    if inverted:
+        mask = ~mask
 
     if n_decomp is not None:
         # untested!

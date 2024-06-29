@@ -51,6 +51,7 @@ class BlockOutputWrapper(t.nn.Module):
         self.activations = None
         self.add_activations = None
         self.after_position = None
+        self.inverted = False
 
         self.eraser = None
         self.threshold = None
@@ -79,6 +80,7 @@ class BlockOutputWrapper(t.nn.Module):
             vector=self.add_activations,
             position_ids=kwargs["position_ids"],
             after=self.after_position,
+            inverted=self.inverted,
             eraser=self.eraser,
             threshold=self.threshold,
             class_vector=self.class_vector,
@@ -121,6 +123,7 @@ class BlockOutputWrapper(t.nn.Module):
         self.activations = None
         self.block.self_attn.activations = None
         self.after_position = None
+        self.inverted = False
         self.calc_dot_product_with = None
         self.dot_products = []
 
@@ -133,10 +136,12 @@ class LlamaWrapper:
         use_chat: bool = True,
         override_model_weights_path: Optional[str] = None,
         after_instr: bool = True,
+        only_instr: bool = False,
     ):
         self.device = "cuda" if t.cuda.is_available() else "cpu"
         self.use_chat = use_chat
         self.after_instr = after_instr
+        self.only_instr = only_instr
         self.model_name_path = get_model_path(size, not use_chat)
         self.tokenizer = AutoTokenizer.from_pretrained(
             self.model_name_path, token=hf_token
@@ -169,6 +174,7 @@ class LlamaWrapper:
     def set_after_positions(self, pos: int):
         for layer in self.model.model.layers:
             layer.after_position = pos
+            layer.inverted = self.only_instr
 
     def generate(self, tokens, max_new_tokens=100):
         with t.no_grad():
