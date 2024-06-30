@@ -91,7 +91,7 @@ dep_base = {
     "instrorth": ["gen_orth"],
 }
 
-done = ["gen_basic", "gen_orth", "gen_logit", "gen_acts"]
+done = []
 for k in dep_base:
     for d in dep_base[k]:
         if d in done:
