@@ -310,8 +310,13 @@ def mults_plot_grid(layers: list[int], multipliers: list[float],
             else:
                 ax.plot(xs, means, label=f"{label}", color=color)#, marker=markers[i])
             ax.set_title(behavior)
-            ax.set_xlabel("multiplier")
-            ax.set_ylabel("matching prob")
+            ax.set_xlabel("CAA multiplier")
+            if ab_sum:
+                ax.set_ylabel("p(A) + p(B)")
+            elif a_vs_b:
+                ax.set_ylabel("p(A) / (p(A) + p(B))")
+            else:
+                ax.set_ylabel("p(matching) / (p(A) + p(B))")
             ax.legend()
             ax.set_ylim(0, 1)
     return fig, axs
@@ -654,3 +659,50 @@ a_vs_b=True,
 )
 fig.suptitle("7B-chat layer 13: A vs B\n(mostly-MC -> MC)")
 plt.savefig("plots/mc_mc_toks_ab.png")
+
+
+
+fig, axs = mults_plot_grid([13]*5 , None, {
+    "default": (SteeringSettings(
+        model_size='7b', normalized=False, balanced=True,
+        ), 'blue'), 
+    "instr": (SteeringSettings(
+        model_size='7b', normalized=False, only_instr=True, balanced=True,
+        ), 'red'),
+    "alltok": (SteeringSettings(
+        model_size='7b', normalized=False, after_instr=False, balanced=True,
+        ), 'green'),
+    "logit": (SteeringSettings(
+        model_size='7b', normalized=False, logit=True, balanced=True,
+        ), 'green'),
+    "leace": (SteeringSettings(
+        model_size='7b', normalized=False, leace=True, balanced=True,
+        ), 'green'),
+},
+colors=False,
+a_vs_b=True,
+)
+fig.suptitle("7B-chat layer 13: A vs B\n(BalancedMC -> MC)")
+plt.savefig("plots/bal_mc_toks_ab.png")
+
+fig, axs = mults_plot_grid([13]*5 , None, {
+    "default": (SteeringSettings(
+        model_size='7b', normalized=False, balanced=True,
+        ), 'blue'), 
+    "instr": (SteeringSettings(
+        model_size='7b', normalized=False, only_instr=True, balanced=True,
+        ), 'red'),
+    "alltok": (SteeringSettings(
+        model_size='7b', normalized=False, after_instr=False, balanced=True,
+        ), 'green'),
+    "logit": (SteeringSettings(
+        model_size='7b', normalized=False, logit=True, balanced=True,
+        ), 'green'),
+    "leace": (SteeringSettings(
+        model_size='7b', normalized=False, leace=True, balanced=True,
+        ), 'green'),
+},
+colors=False,
+)
+fig.suptitle("7B-chat layer 13: p(Matching)\n(BalancedMC -> MC)")
+plt.savefig("plots/bal_mc_toks_grid.png")
