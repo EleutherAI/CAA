@@ -4,17 +4,17 @@ import sys
 name = "0630_bal13V"
 
 commands = {
-    'gen_basic': 'python generate_vectors.py --layers $(seq 0 31)',
+    # 'gen_basic': 'python generate_vectors.py --layers $(seq 0 31)',
     # 'gen_acts': 'python generate_vectors.py --layers $(seq 0 31) --save_activations',
-    'gen_orth': 'python generate_vectors.py --layers $(seq 0 31) --method orth',
-    'gen_quad': 'python generate_vectors.py --layers $(seq 0 31) --method quad',
-    'gen_logit': 'python generate_vectors.py --layers $(seq 0 31) --logit',
+    # 'gen_orth': 'python generate_vectors.py --layers $(seq 0 31) --method orth',
+    # 'gen_quad': 'python generate_vectors.py --layers $(seq 0 31) --method quad',
+    # 'gen_logit': 'python generate_vectors.py --layers $(seq 0 31) --logit',
 
     'allcaa': f'python prompting_with_steering.py --layers -1 --multipliers $(seq -.25 .1 .25) --type open_ended --unnormalized',
     'allleace': f'python prompting_with_steering.py --layers -1 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --leace',
     'allorth': f'python prompting_with_steering.py --layers -1 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --leace --method orth',
     'basic': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized',
-    'layers': 'python prompting_with_steering.py --layers $(seq 10 20) --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized',
+    # 'layers': 'python prompting_with_steering.py --layers $(seq 10 20) --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized',
     'leace': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --leace',
     'orth': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --leace --method orth',
     'quad': 'python prompting_with_steering.py --layers 13 --multipliers -1 0 1 --type open_ended --unnormalized --leace --method quad',
@@ -30,6 +30,8 @@ commands = {
     'instrleace': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --only_instr --leace', 
     'instrorth': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --only_instr --leace --method orth', 
 }
+
+done = [gen_basic, gen_orth, gen_quad, gen_logit]
 
 for job in list(commands.keys()):
     #if not job.startswith("gen_"):
@@ -90,7 +92,6 @@ dep_base = {
     "instrorth": ["gen_orth"],
 }
 
-done = []
 for k in dep_base:
     for d in dep_base[k]:
         if d in done:
