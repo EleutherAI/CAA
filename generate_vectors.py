@@ -80,11 +80,12 @@ def generate_save_vectors_for_behavior(
     logit: bool,
     stdev: bool,
     open_response: bool,
+    balanced: bool,
 ):
     if open_response:
         data_path = get_open_response_data_path(behavior)
     else:
-        data_path = get_ab_data_path(behavior)
+        data_path = get_ab_data_path(behavior, balanced=balanced)
     if not os.path.exists(get_vector_dir(behavior)):
         os.makedirs(get_vector_dir(behavior))
     if save_activations and not os.path.exists(get_activations_dir(behavior)):
@@ -207,21 +208,21 @@ def generate_save_vectors_for_behavior(
 
             force_save(
                 lda,
-                get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response, prefix="lda"),
+                get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response, balanced=balanced, prefix="lda"),
             )
 
         force_save(
             vec,
-            get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response),
+            get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response, balanced=balanced),
         )
         if not logit:
             force_save(
                 mean,
-                get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response, prefix="mean"),
+                get_vector_path(behavior, layer, model.model_name_path, logit, stdev, open_response=open_response, balanced=balanced, prefix="mean"),
             )
         force_save(
             eraser,
-            get_eraser_path(behavior, layer, model.model_name_path, logit, open_response, leace_method),
+            get_eraser_path(behavior, layer, model.model_name_path, logit, open_response, balanced, leace_method),
         )
         if save_activations:
             t.save(
@@ -271,6 +272,7 @@ if __name__ == "__main__":
     parser.add_argument("--logit", action="store_true", default=False)
     parser.add_argument("--stdev", action="store_true", default=False)
     parser.add_argument("--open", action="store_true", default=False)
+    parser.add_argument("--balanced", action="store_true", default=False)
 
     args = parser.parse_args()
     if args.method != "leace" and args.stdev:
@@ -281,6 +283,8 @@ if __name__ == "__main__":
         raise NotImplementedError("Can't save activations with open response")
     if args.save_activations and args.logit:
         raise NotImplementedError("Can't save activations with logit")
+    if args.save_activations and args.balanced:
+        raise NotImplementedError("Can't save activations with balanced data")
 
     
 
@@ -294,6 +298,7 @@ if __name__ == "__main__":
         logit=args.logit,
         stdev=args.stdev,
         open_response=args.open,
+        balanced=args.balanced,
     )
 
     print("Done!")

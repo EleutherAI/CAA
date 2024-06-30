@@ -20,6 +20,7 @@ def normalize_vectors(model_size: str, is_base: bool, n_layers: int, args):
                 logit=args.logit,
                 stdev=args.stdev,
                 open_response=args.open,
+                balanced=args.balanced,
                 )
             vec = t.load(vec_path)
             norm = vec.norm().item()
@@ -45,6 +46,7 @@ if __name__ == "__main__":
     parser.add_argument("--logit", action="store_true", default=False)
     parser.add_argument("--stdev", action="store_true", default=False)
     parser.add_argument("--open", action="store_true", default=False)
+    parser.add_argument("--balanced", action="store_true", default=False)
 
     args = parser.parse_args()
 

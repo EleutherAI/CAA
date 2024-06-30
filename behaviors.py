@@ -60,22 +60,25 @@ def get_eraser_dir(behavior: str) -> str:
 def get_vector_path(
         behavior: str, layer, model_name_path: str, 
         logit: bool, stdev: bool, open_response: bool = False,
+        balanced: bool = False,
         prefix: str = "vec", normalized=False
     ) -> str:
     return os.path.join(
         get_vector_dir(behavior, normalized=normalized),
         "logit" if logit else "",
         "open" if open_response else "",
+        "balanced" if balanced else "",
         "stdev" if stdev else "",
         f"{prefix}_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
     )
 
 
-def get_eraser_path(behavior: str, layer, model_name_path: str, logit: bool, open_response: bool, prefix: str) -> str:
+def get_eraser_path(behavior: str, layer, model_name_path: str, logit: bool, open_response: bool, balanced: bool, prefix: str) -> str:
     return os.path.join(
         get_eraser_dir(behavior),
         "logit" if logit else "",
         "open" if open_response else "",
+        "balanced" if balanced else "",
         f"{prefix}_layer_{make_tensor_save_suffix(layer, model_name_path)}.pt",
     )
 
@@ -84,9 +87,11 @@ def get_raw_data_path(behavior: str) -> str:
     return os.path.join(RAW_DATA_PATH, behavior, "dataset.json")
 
 
-def get_ab_data_path(behavior: str, test: bool = False) -> str:
+def get_ab_data_path(behavior: str, test: bool = False, balanced: bool = False) -> str:
     if test:
         path = os.path.join(TEST_DATA_PATH, behavior, "test_dataset_ab.json")
+    elif balanced:
+        path = os.path.join(GENERATE_DATA_PATH, behavior, "generate_balanced_dataset.json")
     else:
         path = os.path.join(GENERATE_DATA_PATH, behavior, "generate_dataset.json")
     return path
@@ -196,9 +201,9 @@ def get_mmlu_data():
 
 
 def get_steering_vector(behavior, layer, model_name_path, normalized=False, 
-        logit=False, stdev=False, open_response=False, device=None, prefix:str="vec"):
+        logit=False, stdev=False, open_response=False, balanced=False, device=None, prefix:str="vec"):
     return t.load(
-        get_vector_path(behavior, layer, model_name_path, logit, stdev, open_response, prefix, normalized=normalized),
+        get_vector_path(behavior, layer, model_name_path, logit, stdev, open_response, balanced, prefix, normalized=normalized),
         map_location=device,
     )
 
@@ -217,11 +222,11 @@ def change_eraser_dtype(eraser : LeaceEraser | QuadraticEditor, dtype):
         raise ValueError(f"eraser must be a LeaceEraser or a QuadraticEditor, not {type(eraser)}")
 
 
-def get_steering_eraser(behavior, layer, model_name_path, logit=False, open_response=False, device=None, prefix:str="eras"):
+def get_steering_eraser(behavior, layer, model_name_path, logit=False, open_response=False, balanced=False, device=None, prefix:str="eras"):
     if prefix in QUAD_MODES:
         prefix = "quad"
     return t.load(
-        get_eraser_path(behavior, layer, model_name_path, logit, open_response, prefix),
+        get_eraser_path(behavior, layer, model_name_path, logit, open_response, balanced, prefix),
         map_location=device,
     )
 

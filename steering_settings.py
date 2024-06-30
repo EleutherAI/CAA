@@ -22,6 +22,7 @@ class SteeringSettings:
     after_instr: bool = True
     only_instr: bool = False
     open_response: bool = False
+    balanced: bool = False
 
     def __post_init__(self):
         assert self.behavior in ALL_BEHAVIORS, f"Invalid behavior {self.behavior}"
@@ -60,6 +61,8 @@ class SteeringSettings:
             elements["instr"] = True
         if self.open_response:
             elements["open"] = True
+        if self.balanced:
+            elements["balanced"] = True
         
         return "__".join([f"{k}={str(v).replace('/', '-')}" for k, v in elements.items() if v is not None])
 
@@ -89,6 +92,7 @@ class SteeringSettings:
             "after": False if not self.after_instr else None,
             "instr": True if self.only_instr else None,
             "open": True if self.open_response else None,
+            "balanced": True if self.balanced else None,
         }
 
         if multiplier is not None:

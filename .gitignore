@@ -16,6 +16,8 @@ vectors/**/*.pt
 erasers/**/*.pt
 normalized_vectors/**/*.pt
 results/**/*.json
+results*/**/*.json
 analysis/**/*.*
 output/**
 0405
+plots/*.png

@@ -271,6 +271,7 @@ def mults_plot_grid(layers: list[int], multipliers: list[float],
     rescale=False,
     colors=True,
     ab_sum=False,
+    a_vs_b=False,
     ):
     if multipliers is None:
         mult_lists = [get_mults(layer, pair[0]) for layer, pair in zip(layers, settingses.values())]
@@ -295,7 +296,7 @@ def mults_plot_grid(layers: list[int], multipliers: list[float],
 
             # print('getting mprobs')
             mprobs = [get_mprobs(layer, m, settings) for m in mults]
-            mu_pairs = [get_probs(layer, m, settings, True) for m in mults]
+            mu_pairs = [get_probs(layer, m, settings, not a_vs_b) for m in mults]
             if ab_sum:
                 mprobs = [match_probs + unmatch_probs for match_probs, unmatch_probs in mu_pairs]
             else:
@@ -421,121 +422,235 @@ def sweep_plot(layers: list[int], multiplier: float, settingses: dict[str, (Stee
 # plt.savefig("plots/open_mc_alltok_zoom.png")
 
 
-fig, axs = mults_plot_grid([13, 13, 13] , None, {
-    "CAA": (SteeringSettings(
-        model_size='7b', normalized=False, open_response=True
-        ), 'blue'), 
-    "CAA+orth": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True, leace_method="orth", open_response=True
-        ), 'red'),
-    "CAA+leace": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True, open_response=True
-        ), 'green'),
-},
-colors=False,
-)
-fig.suptitle("7B-chat layer 13\n(open -> MC)")
-plt.savefig("plots/open_mc_grid.png")
+# fig, axs = mults_plot_grid([13, 13, 13] , None, {
+#     "CAA": (SteeringSettings(
+#         model_size='7b', normalized=False, open_response=True
+#         ), 'blue'), 
+#     "CAA+orth": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, leace_method="orth", open_response=True
+#         ), 'red'),
+#     "CAA+leace": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, open_response=True
+#         ), 'green'),
+# },
+# colors=False,
+# )
+# fig.suptitle("7B-chat layer 13\n(open -> MC)")
+# plt.savefig("plots/open_mc_grid.png")
 
 
-fig, axs = mults_plot_grid([13, 13, 13] , None, {
-    "CAA": (SteeringSettings(
-        model_size='7b', normalized=False, open_response=True
-        ), 'blue'), 
-    "CAA+orth": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True, leace_method="orth", open_response=True
-        ), 'red'),
-    "CAA+leace": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True, open_response=True
-        ), 'green'),
-},
-colors=False,
-ab_sum=True,
-)
-fig.suptitle("7B-chat layer 13: p(A) + p(B)\n(open -> MC)")
-plt.savefig("plots/open_mc_grid_sum.png")
+# fig, axs = mults_plot_grid([13, 13, 13] , None, {
+#     "CAA": (SteeringSettings(
+#         model_size='7b', normalized=False, open_response=True
+#         ), 'blue'), 
+#     "CAA+orth": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, leace_method="orth", open_response=True
+#         ), 'red'),
+#     "CAA+leace": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, open_response=True
+#         ), 'green'),
+# },
+# colors=False,
+# ab_sum=True,
+# )
+# fig.suptitle("7B-chat layer 13: p(A) + p(B)\n(open -> MC)")
+# plt.savefig("plots/open_mc_grid_sum.png")
 
 
-fig, axs = mults_plot_grid([13, 13, 13] , None, {
-    "CAA": (SteeringSettings(
-        model_size='7b', normalized=False, open_response=True, after_instr=False,
-        ), 'blue'), 
-    "CAA+orth": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True, leace_method="orth", open_response=True, after_instr=False,
-        ), 'red'),
-    "CAA+leace": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True, open_response=True, after_instr=False,
-        ), 'green'),
-},
-colors=False,
-)
-fig.suptitle("7B-chat layer 13\n(open -> MC) alltok")
-plt.savefig("plots/open_mc_alltok_grid.png")
+# fig, axs = mults_plot_grid([13, 13, 13] , None, {
+#     "CAA": (SteeringSettings(
+#         model_size='7b', normalized=False, open_response=True, after_instr=False,
+#         ), 'blue'), 
+#     "CAA+orth": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, leace_method="orth", open_response=True, after_instr=False,
+#         ), 'red'),
+#     "CAA+leace": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, open_response=True, after_instr=False,
+#         ), 'green'),
+# },
+# colors=False,
+# )
+# fig.suptitle("7B-chat layer 13\n(open -> MC) alltok")
+# plt.savefig("plots/open_mc_alltok_grid.png")
 
 
-fig, axs = mults_plot_grid([13, 13, 13] , None, {
-    "CAA": (SteeringSettings(
+# fig, axs = mults_plot_grid([13, 13, 13] , None, {
+#     "CAA": (SteeringSettings(
+#         model_size='7b', normalized=False,
+#         ), 'blue'), 
+#     "CAA+orth": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, leace_method="orth",
+#         ), 'red'),
+#     "CAA+leace": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True,
+#         ), 'green'),
+# },
+# colors=False,
+# )
+# fig.suptitle("7B-chat layer 13\n(MC -> MC)")
+# plt.savefig("plots/mc_mc_grid.png")
+
+
+# fig, axs = mults_plot_grid([13, 13, 13] , None, {
+#     "CAA": (SteeringSettings(
+#         model_size='7b', normalized=False,
+#         ), 'blue'), 
+#     "CAA+orth": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, leace_method="orth",
+#         ), 'red'),
+#     "CAA+leace": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True,
+#         ), 'green'),
+# },
+# colors=False,
+# ab_sum=True,
+# )
+# fig.suptitle("7B-chat layer 13: p(A) + p(B)\n(MC -> MC)")
+# plt.savefig("plots/mc_mc_grid_sum.png")
+
+
+# fig, axs = mults_sample_grid([13, 13, 13] , None, {
+#     "CAA": (SteeringSettings(
+#         model_size='7b', normalized=False,
+#         ), 'blue'), 
+# },
+# colors=True,
+# )
+# fig.suptitle("7B-chat layer 13\n(MC -> MC) CAA")
+# plt.savefig("plots/mc_mc_sampgrid_caa.png")
+
+
+# fig, axs = mults_sample_grid([13, 13, 13] , None, {
+#     "CAA+orth": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, leace_method="orth",
+#         ), 'red'),
+# },
+# colors=True,
+# )
+# fig.suptitle("7B-chat layer 13\n(MC -> MC) CAA+orth")
+# plt.savefig("plots/mc_mc_sampgrid_orth.png")
+
+
+# fig, axs = mults_sample_grid([13, 13, 13] , None, {
+#     "CAA+leace": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True,
+#         ), 'green'),
+# },
+# colors=True,
+# )
+# fig.suptitle("7B-chat layer 13\n(MC -> MC) CAA+leace")
+# plt.savefig("plots/mc_mc_sampgrid_leace.png")
+
+
+
+# fig, axs = mults_plot_grid([13, 13, 13] , None, {
+#     "CAA": (SteeringSettings(
+#         model_size='7b', normalized=False, open_response=True, only_instr=True,
+#         ), 'blue'), 
+#     "CAA+orth": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, leace_method="orth", open_response=True, only_instr=True,
+#         ), 'red'),
+#     "CAA+leace": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, open_response=True, only_instr=True,
+#         ), 'green'),
+# },
+# colors=False,
+# )
+# fig.suptitle("7B-chat layer 13\n(open -> MC)")
+# plt.savefig("plots/open_mc_instr_grid.png")
+
+
+
+# fig, axs = mults_plot_grid([13, 13, 13] , None, {
+#     "CAA": (SteeringSettings(
+#         model_size='7b', normalized=False,  only_instr=True,
+#         ), 'blue'), 
+#     "CAA+orth": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, leace_method="orth", only_instr=True,
+#         ), 'red'),
+#     "CAA+leace": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, only_instr=True,
+#         ), 'green'),
+# },
+# colors=False,
+# )
+# fig.suptitle("7B-chat layer 13\n(open -> MC)")
+# plt.savefig("plots/mc_mc_instr_grid.png")
+
+# fig, axs = mults_plot_grid([13, 13, 13] , None, {
+#     "CAA": (SteeringSettings(
+#         model_size='7b', normalized=False,  after_instr=False,
+#         ), 'blue'), 
+#     "CAA+orth": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, leace_method="orth", after_instr=False,
+#         ), 'red'),
+#     "CAA+leace": (SteeringSettings(
+#         model_size='7b', normalized=False, leace=True, after_instr=False,
+#         ), 'green'),
+# },
+# colors=False,
+# )
+# fig.suptitle("7B-chat layer 13\n(open -> MC)")
+# plt.savefig("plots/mc_mc_alltok_grid.png")
+
+
+# fig, axs = mults_plot_grid([13, 13, 13] , None, {
+#     "default": (SteeringSettings(
+#         model_size='7b', normalized=False,
+#         ), 'blue'), 
+#     "instr": (SteeringSettings(
+#         model_size='7b', normalized=False, only_instr=True,
+#         ), 'red'),
+#     "alltok": (SteeringSettings(
+#         model_size='7b', normalized=False, after_instr=False,
+#         ), 'green'),
+# },
+# colors=False,
+# )
+# fig.suptitle("7B-chat layer 13\n(MC -> MC)")
+# plt.savefig("plots/mc_mc_toks_grid.png")
+
+
+# fig, axs = mults_plot_grid([13, 13, 13] , None, {
+#     "default": (SteeringSettings(
+#         model_size='7b', normalized=False,
+#         ), 'blue'), 
+#     "instr": (SteeringSettings(
+#         model_size='7b', normalized=False, only_instr=True,
+#         ), 'red'),
+#     "alltok": (SteeringSettings(
+#         model_size='7b', normalized=False, after_instr=False,
+#         ), 'green'),
+# },
+# colors=False,
+# ab_sum=True,
+# )
+# fig.suptitle("7B-chat layer 13: p(A)+p(B)\n(MC -> MC)")
+# plt.savefig("plots/mc_mc_toks_sum_grid.png")
+
+
+fig, axs = mults_plot_grid([13]*6 , None, {
+    "default": (SteeringSettings(
         model_size='7b', normalized=False,
         ), 'blue'), 
-    "CAA+orth": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True, leace_method="orth",
+    "instr": (SteeringSettings(
+        model_size='7b', normalized=False, only_instr=True,
         ), 'red'),
-    "CAA+leace": (SteeringSettings(
+    "alltok": (SteeringSettings(
+        model_size='7b', normalized=False, after_instr=False,
+        ), 'green'),
+    "logit": (SteeringSettings(
+        model_size='7b', normalized=False, logit=True,
+        ), 'green'),
+    "leace": (SteeringSettings(
         model_size='7b', normalized=False, leace=True,
+        ), 'green'),
+    "open": (SteeringSettings(
+        model_size='7b', normalized=False, leace=True, open_response=True,
         ), 'green'),
 },
 colors=False,
+a_vs_b=True,
 )
-fig.suptitle("7B-chat layer 13\n(MC -> MC)")
-plt.savefig("plots/mc_mc_grid.png")
-
-
-fig, axs = mults_plot_grid([13, 13, 13] , None, {
-    "CAA": (SteeringSettings(
-        model_size='7b', normalized=False,
-        ), 'blue'), 
-    "CAA+orth": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True, leace_method="orth",
-        ), 'red'),
-    "CAA+leace": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True,
-        ), 'green'),
-},
-colors=False,
-ab_sum=True,
-)
-fig.suptitle("7B-chat layer 13: p(A) + p(B)\n(MC -> MC)")
-plt.savefig("plots/mc_mc_grid_sum.png")
-
-
-fig, axs = mults_sample_grid([13, 13, 13] , None, {
-    "CAA": (SteeringSettings(
-        model_size='7b', normalized=False,
-        ), 'blue'), 
-},
-colors=True,
-)
-fig.suptitle("7B-chat layer 13\n(MC -> MC) CAA")
-plt.savefig("plots/mc_mc_sampgrid_caa.png")
-
-
-fig, axs = mults_sample_grid([13, 13, 13] , None, {
-    "CAA+orth": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True, leace_method="orth",
-        ), 'red'),
-},
-colors=True,
-)
-fig.suptitle("7B-chat layer 13\n(MC -> MC) CAA+orth")
-plt.savefig("plots/mc_mc_sampgrid_orth.png")
-
-
-fig, axs = mults_sample_grid([13, 13, 13] , None, {
-    "CAA+leace": (SteeringSettings(
-        model_size='7b', normalized=False, leace=True,
-        ), 'green'),
-},
-colors=True,
-)
-fig.suptitle("7B-chat layer 13\n(MC -> MC) CAA+leace")
-plt.savefig("plots/mc_mc_sampgrid_leace.png")
+fig.suptitle("7B-chat layer 13: A vs B\n(mostly-MC -> MC)")
+plt.savefig("plots/mc_mc_toks_ab.png")

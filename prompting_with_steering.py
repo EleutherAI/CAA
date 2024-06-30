@@ -145,20 +145,24 @@ def test_steering(
             name_path = settings.override_vector_model
 
         def get_artifacts(layer_to_get):
-            vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
+            vector = get_steering_vector(settings.behavior, layer_to_get, name_path, 
+            open_response=settings.open_response, balanced=settings.balanced,
                 normalized=settings.normalized, logit=settings.logit, stdev=settings.stdev, device=model.device)
             mean_vector, lda_vector, eraser = None, None, None
 
             if settings.classify is not None:
-                mean_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
+                mean_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, 
+                open_response=settings.open_response, balanced=settings.balanced,
                     normalized=False, logit=settings.logit, stdev=settings.stdev, device=model.device, prefix="mean")
                 if settings.classify == "lda":
-                    lda_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
+                    lda_vector = get_steering_vector(settings.behavior, layer_to_get, name_path, 
+                        open_response=settings.open_response, balanced=settings.balanced,
                         normalized=False, logit=settings.logit, stdev=settings.stdev, device=model.device, prefix="lda")
             if settings.model_size != "7b":
                 vector = vector.half()
             if settings.leace:
-                eraser = get_steering_eraser(settings.behavior, layer_to_get, name_path, open_response=settings.open_response,
+                eraser = get_steering_eraser(settings.behavior, layer_to_get, name_path,
+                    open_response=settings.open_response, balanced=settings.balanced,
                     logit=settings.logit, device=model.device, prefix=settings.leace_method)
                 eraser = change_eraser_dtype(eraser, vector.dtype)
                 assert eraser is not None
@@ -293,6 +297,7 @@ if __name__ == "__main__":
     parser.add_argument("--all_tokens", action="store_false", dest="after")
     parser.add_argument("--only_instr", action="store_true", default=False)
     parser.add_argument("--open", action="store_true", default=False)
+    parser.add_argument("--balanced", action="store_true", default=False)
 
     args = parser.parse_args()
 
@@ -313,6 +318,7 @@ if __name__ == "__main__":
     steering_settings.after_instr = args.after
     steering_settings.only_instr = args.only_instr
     steering_settings.open_response = args.open
+    steering_settings.balanced = args.balanced
     
     for behavior in args.behaviors:
         print(f"Steering for behavior {behavior}")
