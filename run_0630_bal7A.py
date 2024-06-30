@@ -10,25 +10,25 @@ commands = {
     'gen_quad': 'python generate_vectors.py --layers $(seq 0 31) --method quad',
     'gen_logit': 'python generate_vectors.py --layers $(seq 0 31) --logit',
 
-    'allcaa': f'python prompting_with_steering.py --layers -1 --multipliers $(seq -.3 .1 .3) --type open_ended --unnormalized',
-    'allleace': f'python prompting_with_steering.py --layers -1 --multipliers $(seq -3 3) --type open_ended --unnormalized --leace',
-    'allorth': f'python prompting_with_steering.py --layers -1 --multipliers $(seq -3 3) --type open_ended --unnormalized --leace --method orth',
-    'basic': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized',
-    'layers': 'python prompting_with_steering.py --layers $(seq 10 20) --multipliers $(seq -3 3) --type open_ended --unnormalized',
-    'leace': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --leace',
-    'orth': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --leace --method orth',
+    'allcaa': f'python prompting_with_steering.py --layers -1 --multipliers $(seq -.25 .1 .25) --type open_ended --unnormalized',
+    'allleace': f'python prompting_with_steering.py --layers -1 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --leace',
+    'allorth': f'python prompting_with_steering.py --layers -1 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --leace --method orth',
+    'basic': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized',
+    'layers': 'python prompting_with_steering.py --layers $(seq 10 20) --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized',
+    'leace': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --leace',
+    'orth': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --leace --method orth',
     'quad': 'python prompting_with_steering.py --layers 13 --multipliers -1 0 1 --type open_ended --unnormalized --leace --method quad',
     'qall': 'python prompting_with_steering.py --layers 13 --multipliers -1 0 1 --type open_ended --unnormalized --leace --method qall',
-    'logit': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --logit',
-    'class': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --classify mean',
-    'lda': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --classify lda',
-    'quadlda': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --classify lda --leace --method quad',
-    'alltok': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --all_tokens', 
-    'alltokleace': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --all_tokens --leace', 
-    'alltokorth': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --all_tokens --leace --method orth', 
-    'instr': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --only_instr', 
-    'instrleace': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --only_instr --leace', 
-    'instrorth': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -3 3) --type open_ended --unnormalized --only_instr --leace --method orth', 
+    'logit': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --logit',
+    'class': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --classify mean',
+    'lda': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --classify lda',
+    'quadlda': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --classify lda --leace --method quad',
+    'alltok': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --all_tokens', 
+    'alltokleace': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --all_tokens --leace', 
+    'alltokorth': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --all_tokens --leace --method orth', 
+    'instr': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --only_instr', 
+    'instrleace': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --only_instr --leace', 
+    'instrorth': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --only_instr --leace --method orth', 
 }
 
 for job in list(commands.keys()):
@@ -60,8 +60,7 @@ for job in list(commands.keys()):
 
 #     cmd = commands[job]
 #     cmd += ' --open'
-#     # cmd = cmd.replace("$(seq -3 3)", "$(seq -3 3) $(seq -.25 .01 .25)")
-#     # cmd = cmd.replace("$(seq -.5 .025 .5)", "$(seq -.5 .025 .5) $(seq -.05 .0025 .05)")
+
 #     commands[job + "_open"] = cmd
 
 # commands = {k: v for k, v in commands.items() if "_13" in k}
