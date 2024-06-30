@@ -31,7 +31,7 @@ commands = {
     'instrorth': 'python prompting_with_steering.py --layers 13 --multipliers $(seq -2.5 2.5) --type open_ended --unnormalized --only_instr --leace --method orth', 
 }
 
-done = [gen_basic, gen_orth, gen_quad, gen_logit]
+done = ['gen_basic', 'gen_orth', 'gen_quad', 'gen_logit']
 
 for job in list(commands.keys()):
     #if not job.startswith("gen_"):
